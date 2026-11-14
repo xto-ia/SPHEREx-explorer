@@ -1,6 +1,8 @@
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Boxes, Crosshair, Search } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { APP_CONFIG } from '../config/app.config';
 import CoordinateForm from '../components/home/CoordinateForm';
 import MissionBrief from '../components/home/MissionBrief';
 import SpherexModelCanvas from '../components/home/SpherexModelCanvas';
@@ -12,7 +14,14 @@ export default function HomePage() {
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-20 pt-10 sm:px-6 lg:pt-14">
       {/* ---------------------------------------------------------------- Hero */}
       <section className="grid grid-cols-1 gap-10 lg:hero-fold lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-center">
-        <div className="hero-column flex min-w-0 flex-col justify-center space-y-7">
+        <div
+          className="hero-column flex min-w-0 flex-col justify-center space-y-7"
+          style={
+            {
+              '--hero-copy-rise': `${APP_CONFIG.layout.heroCopyRise}px`,
+            } as CSSProperties
+          }
+        >
           <p className="kicker flex items-center gap-2">
             <span className="inline-block h-px w-8 bg-accent/60" aria-hidden="true" />
             {t.home.kicker}

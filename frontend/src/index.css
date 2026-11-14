@@ -186,6 +186,20 @@
     min-height: calc(100vh - 10.5rem);
     min-height: calc(100dvh - 10.5rem);
   }
+
+  /*
+   * On the two-column landing layout (>= 1024px) the copy sits a little above
+   * the exact optical centre, which reads better once the page loads. The shift
+   * is a single tunable number: APP_CONFIG.layout.heroCopyRise (px), injected as
+   * `--hero-copy-rise` by HomePage. 0 keeps the centred position. The value is
+   * capped at 13vh and only applied to windows at least 700px tall, so short
+   * windows never slide the copy under the sticky header.
+   */
+  @media (min-width: 1024px) and (min-height: 700px) {
+    .hero-column {
+      transform: translateY(calc(-1 * min(var(--hero-copy-rise, 0px), 13vh)));
+    }
+  }
 }
 
 @layer utilities {
