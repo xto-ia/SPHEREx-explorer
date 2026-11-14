@@ -12,7 +12,15 @@ import warnings
 import numpy as np
 from astropy.wcs import WCS
 
-from .images import product_meta, read_flags_window, read_window, wcs_for
+from .channels import channel_at_pixels
+from .images import (
+    product_meta,
+    read_flags_window,
+    read_variance_window,
+    read_window,
+    wavelength_at,
+    wcs_for,
+)
 
 warnings.filterwarnings("ignore", category=Warning)
 
@@ -74,10 +82,16 @@ def sample_product(
     shape: int,
     *,
     want_flags: bool = True,
-) -> tuple[np.ndarray, np.ndarray | None, np.ndarray]:
+    want_variance: bool = True,
+    lambda_size: int = 96,
+) -> dict[str, np.ndarray | None]:
     """Resample one detector product onto the output grid.
 
-    Returns (image MJy/sr, flags or None, coverage mask).
+    Returns the calibrated image (MJy/sr) together with everything needed to
+    describe it scientifically: the per-pixel channel index from the official
+    calibration map, a coarse WAVE-TAB wavelength grid (one value per pixel of
+    the coarse grid, bilinearly upsampled by the client), the per-pixel
+    variance and the FLAGS bitmask.
     """
 
     meta = product_meta(url)
@@ -102,9 +116,14 @@ def sample_product(
         & (py < naxis2)
     )
     if not inside.any():
-        nan_image = np.full((shape, shape), np.nan, dtype=np.float32)
-        empty_flags = np.zeros((shape, shape), dtype=np.uint32) if want_flags else None
-        return nan_image, empty_flags, np.zeros((shape, shape), dtype=bool)
+        return {
+            "image": np.full((shape, shape), np.nan, dtype=np.float32),
+            "flags": np.zeros((shape, shape), dtype=np.uint32) if want_flags else None,
+            "variance": np.full((shape, shape), np.nan, dtype=np.float32) if want_variance else None,
+            "channel": np.zeros((shape, shape), dtype=np.uint8),
+            "wavelength": np.full((lambda_size, lambda_size), np.nan, dtype=np.float32),
+            "coverage": np.zeros((shape, shape), dtype=bool),
+        }
 
     x0 = max(int(np.floor(np.nanmin(px[inside]))) - 2, 0)
     x1 = min(int(np.ceil(np.nanmax(px[inside]))) + 3, naxis1)
@@ -124,5 +143,51 @@ def sample_product(
         except Exception:  # noqa: BLE001 - flags are optional metadata
             flags = np.zeros((shape, shape), dtype=np.uint32)
 
+    variance = None
+    if want_variance:
+        try:
+            variance_window = read_variance_window(url, y0, y1, x0, x1)
+            if variance_window is not None:
+                variance, _ = _bilinear(
+                    np.asarray(variance_window, dtype=np.float64), px - x0, py - y0
+                )
+                variance = np.where(coverage, variance, np.nan).astype(np.float32)
+        except Exception:  # noqa: BLE001 - variance is an enhancement
+            variance = None
+
     image = np.where(coverage, image, np.nan).astype(np.float32)
-    return image, flags, coverage
+
+    # Official per-pixel channel index (0-18); 0 means "outside the nominal
+    # 17-channel layout", exactly as the calibration product defines it.
+    channel = channel_at_pixels(px, py, (naxis2, naxis1))
+    if channel is None:
+        channel = np.zeros((shape, shape), dtype=np.uint8)
+    else:
+        channel = np.where(inside, channel, 0).astype(np.uint8)
+
+    # WAVE-TAB wavelength on a coarse grid; the field is smooth (the LVF varies
+    # by ~1e-4 um per pixel), so 96x96 plus bilinear upsampling is exact enough
+    # for labels and probes while staying ~36 kB on the wire.
+    step = max(1, shape // lambda_size)
+    sampled = np.arange(0, shape, step)[:lambda_size]
+    wavelength = np.full((len(sampled), len(sampled)), np.nan, dtype=np.float32)
+    if "wave" in meta:
+        try:
+            lam, _bandwidth = wavelength_at(
+                meta, px[np.ix_(sampled, sampled)], py[np.ix_(sampled, sampled)]
+            )
+            wavelength = np.where(
+                np.isfinite(lam), lam, np.nan
+            ).astype(np.float32)
+        except Exception:  # noqa: BLE001 - wavelength is metadata, not pixels
+            wavelength = np.full((len(sampled), len(sampled)), np.nan, dtype=np.float32)
+
+    return {
+        "image": image,
+        "flags": flags,
+        "variance": variance,
+        "channel": channel,
+        "wavelength": wavelength,
+        "coverage": coverage,
+    }
+

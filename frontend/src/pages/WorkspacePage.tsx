@@ -34,7 +34,7 @@ import MoverCandidates from '../components/workspace/MoverCandidates';
 
 function detectorForChannel(channel: { type: string; band: number; array: number }): number {
   if (channel.type === 'array') return channel.array;
-  if (channel.type === 'band') return bandAt(channel.band).array;
+  if (channel.type === 'band') return bandAt(channel.band).detector;
   return 0;
 }
 
@@ -47,26 +47,39 @@ export default function WorkspacePage() {
     if (detector === 0) {
       return {
         bandIndices: allBandIndices(),
-        bandLabel: lang === 'en' ? 'ALL ARRAYS · 102 channels' : 'УСІ МАТРИЦІ · стек',
+        bandLabel: lang === 'en' ? 'QUICK LOOK · 6 detectors' : 'QUICK LOOK · 6 матриць',
         bandKey: 'all',
         detector: 0,
+        channel: null,
+        quickLook: true,
       };
     }
-    const bandSuffix =
-      state.channel.type === 'band' ? ` · ch ${state.channel.band}` : '';
     return {
       bandIndices: bandIndicesForArray(detector),
-      bandLabel: `${arrayLabel(detector)}${bandSuffix}`,
+      // The label stays per-detector so that selecting a channel never reloads
+      // the frames; the channel suffix is added by the worker per display.
+      bandLabel: arrayLabel(detector),
       bandKey: `a${detector}`,
       detector,
+      channel: state.channel.type === 'band' ? bandAt(state.channel.band).subchan : null,
+      quickLook: false,
     };
   }, [detector, state.channel.band, state.channel.type, lang]);
 
+  const [nativeSampling, setNativeSampling] = useState(false);
+  // SPHEREx samples the sky at 6.15"/pixel. Asking for that grid instead of a
+  // fixed 480x480 avoids interpolating (and correlating) the data twice when
+  // the field is small.
+  const nativeShape = Math.max(
+    64,
+    Math.min(1024, Math.round((state.fov * 3600) / 6.15)),
+  );
   const engine = useSkyEngine({
     ra: state.ra,
     dec: state.dec,
     fov: state.fov,
     detector,
+    shape: nativeSampling ? nativeShape : undefined,
     band: bandSelection,
   });
   const { frame, epochs, coverage, ready, rendering, loadedCount, status: rawStatus, error: rawError, size: frameSize } = engine;
@@ -147,6 +160,8 @@ export default function WorkspacePage() {
       epochB,
       coaddMethod,
       compareScale,
+      channel: state.channel.type === 'band' ? bandAt(state.channel.band).subchan : null,
+      maskFlags: state.maskFlags,
       stretch: {
         stretch: state.stretch,
         gain: state.gain,
@@ -165,6 +180,9 @@ export default function WorkspacePage() {
     state.stretch,
     state.gain,
     state.showFlags,
+    state.maskFlags,
+    state.channel.band,
+    state.channel.type,
     coaddMethod,
     compareScale,
     bandSelection.bandKey,
@@ -366,9 +384,10 @@ export default function WorkspacePage() {
       setSpectrumLoading(true);
       setSpectrumError(null);
       try {
-        const data = await fetchSpectrum(targetRa, targetDec, state.fov, epoch, {
-          ra: state.ra,
-          dec: state.dec,
+        // One measurement per visit across every channel the survey recorded
+        // here: this is a real spectrum, not a column scan of one exposure.
+        const data = await fetchSpectrum(targetRa, targetDec, state.fov, {
+          maxProducts: 96,
         });
         if (token !== spectrumTokenRef.current) return;
         setSpectrum(data);
@@ -703,6 +722,13 @@ export default function WorkspacePage() {
                   rendering={rendering}
                   status={engineStatus}
                   error={engineError}
+                  channelNotice={
+                    state.channel.type === 'band' &&
+                    engine.availableChannels.length > 0 &&
+                    !engine.availableChannels.includes(bandAt(state.channel.band).subchan)
+                      ? `${bandAt(state.channel.band).label} · ${bandAt(state.channel.band).wavelength.toFixed(3)} µm — ${t.workspace.channelOutsideCutoutHint}`
+                      : null
+                  }
                   mode={state.mode}
                   epochIndex={epochIndex}
                   epochA={epochA}
@@ -765,9 +791,11 @@ export default function WorkspacePage() {
             <aside className="min-w-0 space-y-px border border-line bg-line">
               <BandArraySelector
                 channel={state.channel}
+                availableChannels={engine.availableChannels}
                 onSelectBand={(band) => update({ band })}
                 onSelectArray={(array) => update({ array, band: undefined })}
                 onSelectAll={() => update({ band: 0 })}
+                onWidenField={() => update({ fov: 3.6 })}
               />
 
               <ImageMathControls
@@ -780,6 +808,8 @@ export default function WorkspacePage() {
                 stretch={state.stretch}
                 gain={state.gain}
                 showFlags={state.showFlags}
+                maskFlags={state.maskFlags}
+                nativeSampling={nativeSampling}
                 onModeChange={changeMode}
                 onCoaddMethodChange={setCoaddMethod}
                 onCompareScaleChange={setCompareScale}
@@ -789,6 +819,8 @@ export default function WorkspacePage() {
                 onStretchChange={(stretch) => update({ stretch })}
                 onGainChange={(gain) => update({ gain })}
                 onShowFlagsChange={(showFlags) => update({ showFlags })}
+                onMaskFlagsChange={(maskFlags) => update({ maskFlags })}
+                onNativeSamplingChange={setNativeSampling}
               />
 
               <MetadataInspector

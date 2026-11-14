@@ -43,6 +43,12 @@ export interface SkyEngine {
   error: string | null;
   size: number;
   loadedCount: number;
+  /** Channels (1-17) that actually occur in the current cutout. */
+  availableChannels: number[];
+  /** Detector-native pixel scale and the grid size that matches it. */
+  pixelScaleArcsec: number;
+  nativeShape: number;
+  quickLook: boolean;
   render: (request: DisplayRequest) => void;
   probe: (epochIndex: number, x: number, y: number) => Promise<ProbeResponse>;
   findCandidates: (
@@ -80,9 +86,11 @@ export function useSkyEngine(options: {
   dec: number;
   fov: number;
   detector: number;
+  shape?: number;
   band: BandSelection;
 }): SkyEngine {
   const { ra, dec, fov, detector, band } = options;
+  const shape = options.shape ?? FRAME_SIZE;
 
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [frame, setFrame] = useState<SkyFrame | null>(null);
@@ -91,6 +99,15 @@ export function useSkyEngine(options: {
   const [rendering, setRendering] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [availableChannels, setAvailableChannels] = useState<number[]>([]);
+  const [pixelScaleArcsec, setPixelScaleArcsec] = useState(6.15);
+  const [nativeShape, setNativeShape] = useState(FRAME_SIZE);
+
+  // The band label is stable per detector; the selected channel changes on
+  // every click and must not reload the frames, so the load effect reads it
+  // through a ref.
+  const bandRef = useRef(band);
+  bandRef.current = band;
 
   const workerRef = useRef<Worker | null>(null);
   const resolversRef = useRef(new Map<number, PendingResolver>());
@@ -248,11 +265,11 @@ export function useSkyEngine(options: {
     loadedEpochsRef.current.clear();
     post({
       type: 'load',
-      size: FRAME_SIZE,
+      size: shape,
       fov,
       ra,
       dec,
-      band,
+      band: bandRef.current,
     });
 
     let cancelled = false;
@@ -266,10 +283,32 @@ export function useSkyEngine(options: {
         fov,
         epoch: epochIndex,
         detector,
-        shape: FRAME_SIZE,
+        shape,
         flags: true,
+        variance: true,
       });
       if (cancelled || controller.signal.aborted) return;
+      const firstFrame = loadedEpochsRef.current.size === 0;
+      if (firstFrame) {
+        // Which channels actually occur in this cutout: a 0.5 deg window only
+        // covers ~2.5 channels, so the UI must not pretend all 17 are there.
+        const counts = new Uint32Array(19);
+        let covered = 0;
+        for (let index = 0; index < plane.channel.length; index += 1) {
+          const value = plane.channel[index];
+          if (value >= 1 && value <= 17) {
+            counts[value] += 1;
+            covered += 1;
+          }
+        }
+        const present: number[] = [];
+        for (let value = 1; value <= 17; value += 1) {
+          if (covered > 0 && counts[value] / covered >= 0.002) present.push(value);
+        }
+        setAvailableChannels(present);
+        setPixelScaleArcsec(plane.pixelScaleArcsec || 6.15);
+        setNativeShape(plane.nativeShape || FRAME_SIZE);
+      }
       post(
         {
           type: 'frame-data',
@@ -277,9 +316,18 @@ export function useSkyEngine(options: {
           mjd: plane.mjd ?? 0,
           image: plane.image,
           flags: plane.flags,
-          scaleArcsecPerPixel: (fov * 3600) / FRAME_SIZE,
+          variance: plane.variance,
+          channel: firstFrame ? plane.channel : new Uint8Array(0),
+          wavelength: firstFrame ? plane.wavelength : new Float32Array(0),
+          lambdaShape: plane.lambdaShape,
+          scaleArcsecPerPixel: (fov * 3600) / shape,
         },
-        [plane.image.buffer, ...(plane.flags ? [plane.flags.buffer] : [])],
+        [
+          plane.image.buffer,
+          ...(plane.flags ? [plane.flags.buffer] : []),
+          ...(plane.variance ? [plane.variance.buffer] : []),
+          ...(firstFrame ? [plane.channel.buffer, plane.wavelength.buffer] : []),
+        ],
       );
       loadedEpochsRef.current.add(epochIndex);
       setLoadedCount((count) => count + 1);
@@ -307,7 +355,7 @@ export function useSkyEngine(options: {
       cancelled = true;
       controller.abort();
     };
-  }, [coverage, detector, ra, dec, fov, band, post]);
+  }, [coverage, detector, ra, dec, fov, shape, post]);
 
   /* -------------------------------------------------------------- render */
   const hasNeeded = useCallback((request: DisplayRequest): boolean => {
@@ -387,8 +435,12 @@ export function useSkyEngine(options: {
     rendering,
     status,
     error,
-    size: FRAME_SIZE,
+    size: shape,
     loadedCount,
+    availableChannels,
+    pixelScaleArcsec,
+    nativeShape,
+    quickLook: detector === 0,
     render,
     probe,
     findCandidates,

@@ -45,6 +45,8 @@ interface BlinkViewportProps {
   epochA: number;
   epochB: number;
   bandLabel: string;
+  /** Shown when the selected channel has no pixels in this cutout. */
+  channelNotice?: string | null;
   targetName: string;
   overlays: WorkspaceState['overlays'];
   overlaySources: OverlaySource[];
@@ -239,6 +241,7 @@ export default function BlinkViewport({
   epochA,
   epochB,
   bandLabel,
+  channelNotice,
   targetName,
   overlays,
   overlaySources,
@@ -705,6 +708,12 @@ export default function BlinkViewport({
         {mode === 'compare' && frame && !frame.rgbaB && (
           <div className="pointer-events-none absolute inset-x-4 bottom-4 border border-warn/50 bg-canvas/85 px-3 py-2 text-center font-mono text-[9px] uppercase tracking-[0.14em] text-warn">
             {t.workspace.compareMissingSide}
+          </div>
+        )}
+
+        {channelNotice && (
+          <div className="pointer-events-none absolute inset-x-4 top-1/2 -translate-y-1/2 border border-amber-500/40 bg-canvas/90 px-3 py-2 text-center font-mono text-[9px] uppercase leading-relaxed tracking-[0.14em] text-amber-300">
+            {channelNotice}
           </div>
         )}
 

@@ -20,6 +20,10 @@ export interface WorkspaceState {
   hasCoordinates: boolean;
   target: TargetSlug | null;
   mode: WorkspaceMode;
+  /**
+   * `band` isolates one official spectral channel (1-102), `array` shows the
+   * whole spectral image of one detector, `all` is the six-detector quick look.
+   */
   channel: { type: ChannelType; band: number; array: number };
   epoch: number;
   epochA: number;
@@ -30,6 +34,8 @@ export interface WorkspaceState {
   stretch: StretchMode;
   gain: number;
   showFlags: boolean;
+  /** Hide contaminated pixels entirely instead of tinting them. */
+  maskFlags: boolean;
   overlays: {
     grid: boolean;
     labels: boolean;
@@ -57,6 +63,7 @@ export interface WorkspacePatch {
   stretch?: StretchMode;
   gain?: number;
   showFlags?: boolean;
+  maskFlags?: boolean;
   overlays?: Partial<WorkspaceState['overlays']>;
 }
 
@@ -102,9 +109,9 @@ export function readWorkspaceState(params: URLSearchParams): WorkspaceState {
   const arrayParam = params.get('array');
   const band = Math.round(clamp(parseNumber(bandParam, 0), 0, 102));
   // WISE 0855 is a 250 K Y-dwarf: it only emits measurably in the long
-  // wavelength channels, so an untouched link to it opens on Array 6 (4.29–5.00 µm).
-  // Everything else defaults to D3 (1.63–2.42 µm): one real detector per epoch
-  // loads quickly, and the "all arrays" stack stays an explicit choice.
+  // wavelength channels, so an untouched link to it opens on Array 6 (4.42-5.01 um).
+  // Everything else defaults to D3 (1.636-2.44 um): one real detector per epoch
+  // loads quickly, and the quick-look stack stays an explicit choice.
   const defaultArray =
     bandParam === null && arrayParam === null
       ? targetFromUrl?.slug === 'wise-0855'
@@ -112,7 +119,7 @@ export function readWorkspaceState(params: URLSearchParams): WorkspaceState {
         : 3
       : 0;
   const array = Math.round(clamp(parseNumber(arrayParam, defaultArray), 0, 6));
-  const channelType: ChannelType = array > 0 ? 'array' : band > 0 ? 'band' : 'all';
+  const channelType: ChannelType = band > 0 ? 'band' : array > 0 ? 'array' : 'all';
 
   const overlayParam = params.get('ovl');
   const overlaySet = overlayParam
@@ -143,6 +150,7 @@ export function readWorkspaceState(params: URLSearchParams): WorkspaceState {
     stretch: parseEnum<StretchMode>(params.get('stretch'), ['asinh', 'linear', 'sqrt', 'log'], 'asinh'),
     gain: clamp(parseNumber(params.get('gain'), 3), 0.5, 40),
     showFlags: parseBoolean(params.get('flags'), false),
+    maskFlags: parseBoolean(params.get('mask'), false),
     overlays: {
       grid: overlay('grid', true),
       labels: overlay('labels', false),
@@ -206,6 +214,7 @@ export function useUrlSync() {
       set('stretch', patch.stretch ?? current.stretch);
       set('gain', (patch.gain ?? current.gain).toFixed(1).replace(/\.0$/, ''));
       set('flags', (patch.showFlags ?? current.showFlags) ? 1 : 0);
+      set('mask', (patch.maskFlags ?? current.maskFlags) ? 1 : 0);
 
       let band = current.channel.type === 'all' ? 0 : current.channel.band;
       let array = current.channel.type === 'array' ? current.channel.array : 0;
@@ -226,7 +235,6 @@ export function useUrlSync() {
       }
       set('band', band);
       set('array', array > 0 ? array : null);
-
       const overlays = { ...current.overlays, ...patch.overlays };
       set('ovl', serializeOverlays(overlays));
 

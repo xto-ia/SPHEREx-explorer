@@ -18,8 +18,9 @@ from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.cache import cache
+from app.channels import band_rows, channel_rows
 from app.config import CORS_ORIGINS, CORS_ORIGIN_REGEX, FRAME_SIZE, MAX_FOV, MIN_FOV
-from app.frames import available_detectors, frame, stack
+from app.frames import LAMBDA_SIZE, available_detectors, frame, stack
 from app.overlays import overlays
 from app.sia import coverage, remembered_fields
 from app.spectrum import spectrum
@@ -87,15 +88,53 @@ def api_frame(
     detector: Annotated[int, Query(ge=0, le=6)] = 3,
     shape: Annotated[int, Query(ge=64, le=1024)] = FRAME_SIZE,
     flags: Annotated[int, Query(ge=0, le=1)] = 0,
+    variance: Annotated[int, Query(ge=0, le=1)] = 1,
 ) -> Response:
     fov = _clamp_fov(fov)
     result = (
         stack(ra, dec, fov, epoch, shape, want_flags=bool(flags))
         if detector == 0
-        else frame(ra, dec, fov, epoch, detector, shape, want_flags=bool(flags))
+        else frame(
+            ra,
+            dec,
+            fov,
+            epoch,
+            detector,
+            shape,
+            want_flags=bool(flags),
+            want_variance=bool(variance),
+        )
     )
     if result is None:
         raise HTTPException(status_code=404, detail="no product covers this field/epoch/detector")
+
+    channel = result.get("channel")
+    wavelength = result.get("wavelength")
+    variance_plane = result.get("variance")
+    has_channel = channel is not None
+    scale = float(result.get("pixelScaleArcsec") or 6.15)
+    native_shape = int(max(64, min(1024, round(fov * 3600.0 / scale))))
+    channel_rows_for_detector = [
+        row for row in channel_rows() if row["detector"] == detector
+    ] if detector > 0 else []
+
+    # The quick look has no single channel and no single wavelength: send empty
+    # planes of the right shape so the payload stays well formed and the UI can
+    # see `hasChannel=false`.
+    if channel is None:
+        channel = np.zeros((shape, shape), dtype=np.uint8)
+    if wavelength is None:
+        wavelength = np.full((LAMBDA_SIZE, LAMBDA_SIZE), np.nan, dtype=np.float32)
+    channel_plane = (
+        np.asarray(channel, dtype=np.uint8)
+        if channel is not None
+        else np.zeros((shape, shape), dtype=np.uint8)
+    )
+    wavelength_plane = (
+        np.asarray(wavelength, dtype=np.float32)
+        if wavelength is not None
+        else np.zeros((0,), dtype=np.float32)
+    )
 
     header = {
         "ra": ra,
@@ -108,15 +147,50 @@ def api_frame(
         "obsId": result["obsId"],
         "unit": "MJy/sr",
         "hasFlags": result["flags"] is not None,
+        "hasVariance": variance_plane is not None,
+        "hasChannel": has_channel,
+        "lambdaShape": int(wavelength_plane.shape[0]),
+        "pixelScaleArcsec": scale,
+        "nativeShape": native_shape,
+        "channels": channel_rows_for_detector,
+        "quickLook": detector == 0,
         "fromCache": result["fromCache"],
     }
     planes: list[tuple[str, np.ndarray]] = [
         ("<f4", np.asarray(result["image"], dtype=np.float32)),
         ("<u1", np.asarray(result["coverage"], dtype=np.uint8)),
+        ("<u1", np.asarray(channel_plane, dtype=np.uint8)),
+        ("<f4", np.asarray(wavelength_plane, dtype=np.float32)),
     ]
+    if variance_plane is not None:
+        planes.append(("<f4", np.asarray(variance_plane, dtype=np.float32)))
     if result["flags"] is not None:
         planes.append(("<u4", np.asarray(result["flags"], dtype=np.uint32)))
     return _pack(header, planes)
+
+
+@app.get("/api/bands")
+def api_bands() -> dict:
+    """Official 102-channel definition (centres, edges, R, bandwidth)."""
+
+    return {
+        "channels": channel_rows(),
+        "bands": [
+            {
+                "index": band["index"],
+                "label": band["label"],
+                "low": band["low"],
+                "high": band["high"],
+            }
+            for band in band_rows()
+        ],
+        "source": "IRSA spectral_channels_spx_cal-sch-v2-2026-229",
+        "note": (
+            "Channels are the mission's geometric definition: 17 per detector "
+            "band, logarithmically spaced. They are a survey-planning "
+            "coordinate, not a per-pixel calibrated wavelength."
+        ),
+    }
 
 
 @app.get("/api/epochs")
@@ -157,6 +231,8 @@ def api_spectrum(
     epoch: Annotated[int, Query(ge=0)] = 0,
     field_ra: Annotated[float | None, Query(ge=0, lt=360)] = None,
     field_dec: Annotated[float | None, Query(ge=-90, le=90)] = None,
+    max_products: Annotated[int, Query(ge=1, le=900)] = 96,
+    flags: Annotated[int, Query(ge=0, le=1)] = 0,
 ) -> dict:
     data = spectrum(
         ra,
@@ -165,9 +241,11 @@ def api_spectrum(
         epoch,
         field_ra=field_ra,
         field_dec=field_dec,
+        max_products=max_products,
+        flags_requested=bool(flags),
     )
     if data is None:
-        raise HTTPException(status_code=404, detail="no detector data for this field/epoch")
+        raise HTTPException(status_code=404, detail="no SPHEREx visit covers this position")
     return data
 
 

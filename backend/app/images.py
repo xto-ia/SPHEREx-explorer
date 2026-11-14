@@ -7,6 +7,7 @@ instead of the 62 MB product, and every result is cached on disk.
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 
 import numpy as np
@@ -103,10 +104,79 @@ def read_flags_window(url: str, y0: int, y1: int, x0: int, x1: int) -> np.ndarra
 
 
 def read_variance_window(url: str, y0: int, y1: int, x0: int, x1: int) -> np.ndarray | None:
+    """Read a window of the VARIANCE plane (MJy^2/sr^2), cached per window."""
+
     meta = product_meta(url)
     if "varianceDatLoc" not in meta:
         return None
-    return read_window(url, meta["varianceDatLoc"], meta["naxis1"], meta["bitpix"], y0, y1, x0, x1)
+
+    key = cache.key("variance", url, y0, y1, x0, x1)
+    cached = cache.get_npz(key)
+    if cached is not None and "variance" in cached:
+        return cached["variance"]
+
+    window = read_window(
+        url, meta["varianceDatLoc"], meta["naxis1"], meta["bitpix"], y0, y1, x0, x1
+    ).astype(np.float32)
+    cache.put_npz(key, {"variance": window}, ttl=FLAGS_CACHE_TTL)
+    return window
+
+
+def pixel_scale_arcsec(url: str) -> float:
+    """Nominal detector pixel scale in arcseconds (cached)."""
+
+    key = cache.key("pixel-scale", url)
+    cached = cache.get_json(key)
+    if cached is not None:
+        return float(cached["arcsec"])
+    wcs = wcs_for(url)
+    try:
+        area = float(wcs.proj_plane_pixel_area())
+        scale = float(np.sqrt(area) * 3600.0)
+    except Exception:  # noqa: BLE001 - nominal SPHEREx sampling
+        scale = 6.15
+    cache.put_json(key, {"arcsec": scale}, ttl=30 * 24 * 60 * 60)
+    return scale
+
+
+def pixel_solid_angle(url: str, x: float, y: float) -> float:
+    """Solid angle of one detector pixel at (x, y) in steradians.
+
+    SPHEREx ships a dedicated solid-angle map, but the local WCS Jacobian is
+    accurate to well under a percent and needs no extra download. Used to turn
+    surface brightness (MJy/sr) into a flux density (uJy).
+    """
+
+    key = cache.key("pixel-area", url, round(x, 2), round(y, 2))
+    cached = cache.get_json(key)
+    if cached is not None:
+        return float(cached["sr"])
+
+    wcs = wcs_for(url)
+    corners = wcs.all_pix2world(
+        np.array([[x - 0.5, y - 0.5], [x + 0.5, y - 0.5], [x + 0.5, y + 0.5], [x - 0.5, y + 0.5]]),
+        0,
+    )
+    ra = np.asarray(corners[:, 0], dtype=float)
+    dec = np.asarray(corners[:, 1], dtype=float)
+    # Shoelace area of the pixel quad in the local tangent plane. For a 6"
+    # pixel the spherical correction is ~1e-8 relative, far below the
+    # calibration error of the flux conversion itself.
+    cos_dec = math.cos(math.radians(float(dec.mean())))
+    dx = (ra - ra[0]) * cos_dec
+    dy = dec - dec[0]
+    area_deg2 = 0.5 * abs(
+        np.dot(dx, np.roll(dy, -1)) - np.dot(dy, np.roll(dx, -1))
+    )
+    sr = float(area_deg2 * (math.pi / 180.0) ** 2)
+    if not np.isfinite(sr) or sr <= 0:
+        try:
+            sr = float(wcs.proj_plane_pixel_area()) * (np.pi / 180.0) ** 2
+        except Exception:  # noqa: BLE001 - fall back to the nominal 6.15" pixel
+            sr = (6.15 / 206265.0) ** 2
+    cache.put_json(key, {"sr": sr}, ttl=30 * 24 * 60 * 60)
+    return sr
+
 
 
 def wcs_for(url: str) -> WCS:

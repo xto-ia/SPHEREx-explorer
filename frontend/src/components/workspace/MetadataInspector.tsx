@@ -84,6 +84,21 @@ export default function MetadataInspector({
             <p className="font-mono text-[10px] text-zinc-300">{formatDec(probe.dec)}</p>
             <p className="mt-1 font-mono text-[10px] text-zinc-400">
               {Number.isFinite(probe.value) ? `${formatNumber(probe.value, 3)} MJy/sr` : '—'}
+              {probe.sigma !== null ? (
+                <span className="text-zinc-600">
+                  {' '}
+                  ± {formatNumber(probe.sigma, 3)}
+                  {probe.sigma > 0 && Number.isFinite(probe.value)
+                    ? ` · S/N ${formatNumber(probe.value / probe.sigma, 1)}`
+                    : ''}
+                </span>
+              ) : null}
+            </p>
+            <p className="font-mono text-[9px] text-zinc-500">
+              {probe.channel >= 1 && probe.channel <= 17
+                ? `${t.workspace.channelShort} ${probe.channel}`
+                : t.workspace.channelOutside}
+              {probe.wavelength !== null ? ` · λ ${probe.wavelength.toFixed(4)} µm` : ''}
             </p>
             <p className="font-mono text-[9px] text-zinc-500">
               {t.workspace.flagsShort}: 0x{probe.flags.toString(16).toUpperCase()}

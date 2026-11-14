@@ -22,6 +22,10 @@ export interface BandSelection {
   bandLabel: string;
   bandKey: string;
   detector: number;
+  /** Isolate one channel of the detector (1-17) or show the whole spectral image. */
+  channel: number | null;
+  /** Quick-look mean of all six detectors: never presented as a measurement. */
+  quickLook: boolean;
 }
 
 export interface EpochFrameMessage {
@@ -30,6 +34,13 @@ export interface EpochFrameMessage {
   mjd: number;
   image: Float32Array;
   flags: Uint32Array | null;
+  /** VARIANCE plane in (MJy/sr)^2, when the backend could provide it. */
+  variance: Float32Array | null;
+  /** Official channel index per pixel (0-18). */
+  channel: Uint8Array;
+  /** WAVE-TAB wavelength on a coarse grid. */
+  wavelength: Float32Array;
+  lambdaShape: number;
   scaleArcsecPerPixel: number;
 }
 
@@ -51,6 +62,10 @@ export interface DisplayRequest {
   coaddMethod: 'sum' | 'mean';
   /** Only read in `compare` mode; defaults to `shared`. */
   compareScale?: CompareScale;
+  /** Mask every pixel whose official channel differs from this one (1-17). */
+  channel?: number | null;
+  /** Hide pixels whose FLAGS carry a contamination bit instead of tinting them. */
+  maskFlags?: boolean;
 }
 
 export interface DisplayWorkerRequest {
@@ -130,6 +145,13 @@ export interface ProbeResponse {
   dec: number;
   xArcsec: number;
   yArcsec: number;
+  /** 1σ surface-brightness uncertainty from the VARIANCE plane (MJy/sr). */
+  sigma: number | null;
+  /** Official channel index at the pixel (0-18). */
+  channel: number;
+  /** WAVE-TAB wavelength (um) and bandwidth from the official channel table. */
+  wavelength: number | null;
+  bandwidth: number | null;
 }
 
 export interface MoverCandidate {

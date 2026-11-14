@@ -48,19 +48,20 @@ CORS_ORIGIN_REGEX = os.environ.get(
 )
 
 # SPHEREx detector arrays: 6 arrays x 17 channels = 102 spectral channels.
-ARRAY_RANGES_UM = (
-    (0.75, 1.11),
-    (1.11, 1.64),
-    (1.64, 2.42),
-    (2.42, 3.58),
-    (3.58, 4.29),
-    (4.29, 5.00),
-)
+# Ranges and channel centres come from the official IRSA calibration product
+# (spectral_channels_spx_cal-sch-v2), not from an even split of 0.75-5.0 um:
+# bands 4-6 in particular are not evenly spaced.
+from .channels_data import BAND_RANGES_UM, CHANNELS  # noqa: E402  (data module)
 
-# 102 channel edges: 17 per array, chained without gaps.
-_edges: list[float] = []
-for _low, _high in ARRAY_RANGES_UM:
-    _step = (_high - _low) / 17
-    _edges.extend(_low + _step * index for index in range(17))
-_edges.append(ARRAY_RANGES_UM[-1][1])
+ARRAY_RANGES_UM = BAND_RANGES_UM
+
+# Fallback channel edges used when the official channel map is unavailable.
+# Each edge is the midpoint between two neighbouring channel passbands, so a
+# pixel wavelength can be assigned to the channel it belongs to.
+_edges: list[float] = [CHANNELS[0][3]]
+for _index in range(1, len(CHANNELS)):
+    _previous = CHANNELS[_index - 1]
+    _current = CHANNELS[_index]
+    _edges.append(round((_previous[4] + _current[3]) / 2.0, 5))
+_edges.append(CHANNELS[-1][4])
 CHANNEL_EDGES_UM = tuple(_edges)

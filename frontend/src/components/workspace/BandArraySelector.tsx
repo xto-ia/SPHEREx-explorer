@@ -3,39 +3,51 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import {
   ARRAY_COLORS,
   ARRAY_LABELS,
-  ARRAY_RANGES,
-  BANDS,
-  BAND_COUNT,
+  BAND_RANGES,
   MOLECULAR_MARKERS,
   arrayLabel,
   bandAt,
+  bandIndex,
+  bandsForArray,
   nearestBand,
 } from '../../lib/sky/bands';
 import type { ChannelType } from '../../hooks/useUrlSync';
 
 interface BandArraySelectorProps {
   channel: { type: ChannelType; band: number; array: number };
+  /** Channels (1-17) that actually occur in the current cutout. */
+  availableChannels: number[];
   onSelectBand: (band: number) => void;
   onSelectArray: (array: number) => void;
   onSelectAll: () => void;
+  /** Widen the field so the whole detector (and all 17 channels) is inside. */
+  onWidenField: () => void;
 }
 
 export default function BandArraySelector({
   channel,
+  availableChannels,
   onSelectBand,
   onSelectArray,
   onSelectAll,
+  onWidenField,
 }: BandArraySelectorProps) {
   const { t } = useLanguage();
-  const band = bandAt(channel.band);
-  const isBands = channel.type === 'band';
+  const activeBand = bandAt(channel.band);
+  const isChannels = channel.type === 'band';
   const isArray = channel.type === 'array';
   const isAll = channel.type === 'all';
-  const activeArray = isArray ? channel.array : band.array;
-  const [low, high] = ARRAY_RANGES[activeArray - 1];
+  const detector =
+    channel.type === 'array' ? channel.array : activeBand.detector;
+  const [low, high] = BAND_RANGES[detector - 1];
+  const arrayBands = bandsForArray(detector);
 
-  const gain =
-    channel.type === 'band' ? 1 : channel.type === 'array' ? Math.sqrt(17) : Math.sqrt(102);
+  const channelAvailable = (subchan: number) =>
+    availableChannels.length === 0 || availableChannels.includes(subchan);
+  const selectedAvailable = channelAvailable(activeBand.subchan);
+
+  const selectChannel = (subchan: number) =>
+    onSelectBand(bandIndex(detector, subchan));
 
   return (
     <section className="bg-canvas/90 p-4" aria-labelledby="bands-title">
@@ -47,7 +59,7 @@ export default function BandArraySelector({
           </h3>
         </div>
         <span className="shrink-0 font-mono text-[8px] uppercase tracking-[0.1em] text-zinc-600">
-          0.75–5.0 µm
+          {t.workspace.spectralImage}
         </span>
       </div>
 
@@ -60,13 +72,16 @@ export default function BandArraySelector({
             key={tab.id}
             type="button"
             onClick={() => {
-              if (tab.id === 'band') onSelectBand(channel.type === 'band' ? channel.band : band.index);
-              else onSelectArray(channel.type === 'array' ? channel.array : band.array);
+              if (tab.id === 'band') {
+                if (!isChannels) selectChannel(activeBand.subchan);
+              } else {
+                onSelectArray(detector);
+              }
             }}
-            aria-pressed={tab.id === 'band' ? isBands : isArray}
+            aria-pressed={tab.id === 'band' ? isChannels : isArray || isAll}
             className={[
               'py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors',
-              (tab.id === 'band' ? isBands : isArray)
+              (tab.id === 'band' ? isChannels : isArray || isAll)
                 ? 'bg-accent/10 text-accent'
                 : 'bg-canvas text-zinc-500 hover:text-zinc-200',
             ].join(' ')}
@@ -80,28 +95,28 @@ export default function BandArraySelector({
         {t.workspace.bandStackHint}
       </p>
 
-      {isBands && (
+      {isChannels && (
         <div className="mt-3 space-y-3">
           <div className="flex items-center justify-between gap-2 border border-line bg-black/20 px-2 py-1.5">
             <div>
               <p className="font-mono text-[11px] text-zinc-100">
-                {band.label} · {band.wavelength.toFixed(3)} µm
+                {activeBand.label} · {activeBand.wavelength.toFixed(3)} µm
               </p>
               <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-zinc-600">
-                {t.common.band} {band.index}/{BAND_COUNT} · Δλ {band.width.toFixed(3)} µm
+                R {activeBand.R} · Δλ {activeBand.width.toFixed(3)} µm · {activeBand.wlMin.toFixed(3)}–{activeBand.wlMax.toFixed(3)}
               </p>
             </div>
             <span
               aria-hidden="true"
               className="h-6 w-6 shrink-0 border"
-              style={{ backgroundColor: `${band.color}22`, borderColor: band.color }}
+              style={{ backgroundColor: `${ARRAY_COLORS[detector - 1]}22`, borderColor: ARRAY_COLORS[detector - 1] }}
             />
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => onSelectBand(Math.max(1, band.index - 1))}
+              onClick={() => selectChannel(Math.max(1, activeBand.subchan - 1))}
               className="grid h-7 w-7 shrink-0 place-items-center border border-line text-zinc-400 transition-colors hover:border-line-hover hover:text-zinc-100"
               aria-label={t.workspace.previousBand}
             >
@@ -110,19 +125,19 @@ export default function BandArraySelector({
             <input
               type="range"
               min={1}
-              max={BAND_COUNT}
+              max={17}
               step={1}
-              value={band.index}
-              onChange={(event) => onSelectBand(Number(event.target.value))}
+              value={activeBand.subchan}
+              onChange={(event) => selectChannel(Number(event.target.value))}
               className="w-full"
               aria-label={t.common.band}
               style={{
-                background: `linear-gradient(to right, ${ARRAY_COLORS.join(', ')})`,
+                background: `linear-gradient(to right, ${ARRAY_COLORS[detector - 1]}33, ${ARRAY_COLORS[detector - 1]})`,
               }}
             />
             <button
               type="button"
-              onClick={() => onSelectBand(Math.min(BAND_COUNT, band.index + 1))}
+              onClick={() => selectChannel(Math.min(17, activeBand.subchan + 1))}
               className="grid h-7 w-7 shrink-0 place-items-center border border-line text-zinc-400 transition-colors hover:border-line-hover hover:text-zinc-100"
               aria-label={t.workspace.nextBand}
             >
@@ -130,53 +145,81 @@ export default function BandArraySelector({
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-1">
-            {BANDS.filter((item) => item.index % 8 === 0 || item.index === 1 || item.index === 102).map((item) => (
-              <button
-                key={item.index}
-                type="button"
-                onClick={() => onSelectBand(item.index)}
-                className={`font-mono text-[8px] tracking-[0.04em] transition-colors ${
-                  item.index === band.index ? 'text-accent' : 'text-zinc-600 hover:text-zinc-300'
-                }`}
-                title={`${item.label} · ${item.wavelength.toFixed(2)} µm`}
-              >
-                {item.index}
-              </button>
-            ))}
+          <div className="grid grid-cols-9 gap-1">
+            {arrayBands.map((item) => {
+              const available = channelAvailable(item.subchan);
+              const selected = item.subchan === activeBand.subchan;
+              return (
+                <button
+                  key={item.index}
+                  type="button"
+                  onClick={() => selectChannel(item.subchan)}
+                  title={`${item.label} · ${item.wavelength.toFixed(3)} µm${available ? '' : ` · ${t.workspace.channelOutsideCutout}`}`}
+                  className={[
+                    'border px-0.5 py-1 font-mono text-[8px] transition-colors',
+                    selected
+                      ? 'border-accent/60 bg-accent/10 text-accent'
+                      : available
+                        ? 'border-line text-zinc-400 hover:text-zinc-100'
+                        : 'border-line/60 text-zinc-700 line-through',
+                  ].join(' ')}
+                >
+                  {item.subchan}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="grid grid-cols-6 gap-1">
-            {ARRAY_LABELS.map((label, index) => (
+          {!selectedAvailable && (
+            <div className="space-y-1.5 border border-amber-500/30 bg-amber-500/[0.04] px-2 py-1.5">
+              <p className="font-mono text-[8px] uppercase leading-relaxed tracking-[0.08em] text-amber-300/90">
+                {t.workspace.channelOutsideCutoutHint}
+              </p>
               <button
-                key={label}
                 type="button"
-                onClick={() => onSelectArray(index + 1)}
-                aria-pressed={band.array === index + 1}
-                className={`border px-1 py-1 font-mono text-[8px] uppercase tracking-[0.08em] transition-colors ${
-                  band.array === index + 1
-                    ? 'border-accent/60 bg-accent/10 text-accent'
-                    : 'border-line text-zinc-500 hover:text-zinc-200'
-                }`}
-                title={arrayLabel(index + 1)}
+                onClick={onWidenField}
+                className="w-full border border-amber-500/40 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.1em] text-amber-200 transition-colors hover:bg-amber-500/10"
               >
-                {label}
+                {t.workspace.widenToDetector}
               </button>
-            ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-1">
+            {arrayBands
+              .filter((item) => item.subchan % 4 === 1 || item.subchan === 17)
+              .map((item) => (
+                <button
+                  key={item.index}
+                  type="button"
+                  onClick={() => selectChannel(item.subchan)}
+                  className={`font-mono text-[8px] tracking-[0.04em] transition-colors ${
+                    item.subchan === activeBand.subchan ? 'text-accent' : 'text-zinc-600 hover:text-zinc-300'
+                  }`}
+                  title={`${item.label} · ${item.wavelength.toFixed(3)} µm`}
+                >
+                  {item.wavelength.toFixed(2)}
+                </button>
+              ))}
           </div>
+
+          <button
+            type="button"
+            onClick={() => onSelectArray(detector)}
+            className="w-full border border-line px-2 py-1.5 font-mono text-[8px] uppercase tracking-[0.12em] text-zinc-400 transition-colors hover:border-line-hover hover:text-zinc-100"
+          >
+            {t.workspace.showWholeArray}
+          </button>
         </div>
       )}
 
       {isArray && (
         <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="font-mono text-[10px] text-zinc-300">
-              {arrayLabel(channel.array)} · {t.workspace.arrayStack}
-            </p>
-            <span className="chip !py-0.5">{t.workspace.snrGain} {gain.toFixed(1)}×</span>
-          </div>
+          <p className="font-mono text-[10px] text-zinc-300">
+            {arrayLabel(channel.array)} · {t.workspace.arrayStack}
+          </p>
           <ul className="space-y-px border border-line bg-line">
-            {ARRAY_RANGES.map(([lo, hi], index) => {
+            {BAND_RANGES.map(([lo, hi], index) => {
               const arrayIndex = index + 1;
               const selected = channel.array === arrayIndex;
               return (
@@ -196,14 +239,14 @@ export default function BandArraySelector({
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block font-mono text-[10px] text-zinc-200">
-                        {ARRAY_LABELS[index]} · {lo.toFixed(2)}–{hi.toFixed(2)} µm
+                        {ARRAY_LABELS[index]} · {lo.toFixed(3)}–{hi.toFixed(3)} µm
                       </span>
                       <span className="mt-0.5 block font-mono text-[8px] uppercase tracking-[0.1em] text-zinc-600">
-                        17 bands · Δλ {(hi - lo).toFixed(2)} µm
+                        {t.workspace.seventeenChannels}
                       </span>
                     </span>
                     <span className={`font-mono text-[9px] ${selected ? 'text-accent' : 'text-zinc-700'}`}>
-                      {selected ? 'ACTIVE' : 'STACK'}
+                      {selected ? t.workspace.activeArray : t.workspace.spectralImageShort}
                     </span>
                   </button>
                 </li>
@@ -220,20 +263,21 @@ export default function BandArraySelector({
                 : 'border-line text-zinc-500 hover:border-line-hover hover:text-zinc-200'
             }`}
           >
-            {t.workspace.allArrays} · 102 {t.common.bands} · {t.workspace.snrGain} {Math.sqrt(102).toFixed(1)}×
+            {t.workspace.quickLook}
           </button>
+          <p className="font-mono text-[8px] leading-relaxed text-zinc-600">
+            {t.workspace.quickLookHint}
+          </p>
         </div>
       )}
 
       {isAll && (
         <div className="mt-3 space-y-2">
-          <p className="font-mono text-[10px] text-zinc-300">
-            {t.workspace.allArrays} · 102 {t.common.bands}
-          </p>
+          <p className="font-mono text-[10px] text-zinc-300">{t.workspace.quickLook}</p>
           <p className="text-[11px] leading-relaxed text-zinc-500">{t.workspace.allArraysHint}</p>
           <button
             type="button"
-            onClick={() => onSelectArray(band.array)}
+            onClick={() => onSelectArray(activeBand.detector)}
             className="w-full border border-line px-2 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-400 transition-colors hover:border-line-hover hover:text-zinc-100"
           >
             {t.workspace.backToArrays}
@@ -247,7 +291,7 @@ export default function BandArraySelector({
           <span className="label-mono">{t.workspace.molecularMarkers}</span>
         </div>
         <p className="font-mono text-[9px] uppercase tracking-[0.08em] text-zinc-600">
-          {low.toFixed(2)}–{high.toFixed(2)} µm · {t.workspace.markersHint}
+          {low.toFixed(3)}–{high.toFixed(3)} µm · {t.workspace.markersHint}
         </p>
         <ul className="grid grid-cols-2 gap-x-2 gap-y-1">
           {MOLECULAR_MARKERS.map((marker) => {
@@ -258,7 +302,7 @@ export default function BandArraySelector({
                 <button
                   type="button"
                   onClick={() => onSelectBand(target.index)}
-                  title={`${marker.note} → ${target.label} (${target.wavelength.toFixed(2)} µm)`}
+                  title={`${marker.note} → ${target.label} (${target.wavelength.toFixed(3)} µm)`}
                   className={`flex w-full items-center gap-1.5 py-0.5 text-left font-mono text-[9px] transition-colors ${
                     inRange ? 'text-zinc-300 hover:text-accent' : 'text-zinc-600 hover:text-zinc-300'
                   }`}
@@ -276,7 +320,11 @@ export default function BandArraySelector({
       </div>
 
       <p className="mt-2 border-t border-line/70 pt-2 font-mono text-[8px] uppercase tracking-[0.1em] text-zinc-700">
-        {t.workspace.snrGain} {gain.toFixed(1)}× · {t.workspace.stackedBands.replace('{n}', channel.type === 'band' ? '1' : channel.type === 'array' ? '17' : '102')}
+        {isChannels
+          ? t.workspace.stackedBands.replace('{n}', '1')
+          : isArray
+            ? t.workspace.stackedBands.replace('{n}', '17')
+            : t.workspace.stackedBands.replace('{n}', '6')}
       </p>
     </section>
   );

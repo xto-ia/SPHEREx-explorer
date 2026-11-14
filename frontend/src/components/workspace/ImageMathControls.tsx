@@ -21,6 +21,8 @@ interface ImageMathControlsProps {
   stretch: StretchMode;
   gain: number;
   showFlags: boolean;
+  maskFlags: boolean;
+  nativeSampling: boolean;
   onModeChange: (mode: WorkspaceMode) => void;
   onCoaddMethodChange: (method: 'sum' | 'mean') => void;
   onCompareScaleChange: (scale: CompareScale) => void;
@@ -30,6 +32,8 @@ interface ImageMathControlsProps {
   onStretchChange: (stretch: StretchMode) => void;
   onGainChange: (gain: number) => void;
   onShowFlagsChange: (value: boolean) => void;
+  onMaskFlagsChange: (value: boolean) => void;
+  onNativeSamplingChange: (value: boolean) => void;
 }
 
 const MODE_ICONS = {
@@ -49,6 +53,8 @@ export default function ImageMathControls({
   stretch,
   gain,
   showFlags,
+  maskFlags,
+  nativeSampling,
   onModeChange,
   onCoaddMethodChange,
   onCompareScaleChange,
@@ -58,6 +64,8 @@ export default function ImageMathControls({
   onStretchChange,
   onGainChange,
   onShowFlagsChange,
+  onMaskFlagsChange,
+  onNativeSamplingChange,
 }: ImageMathControlsProps) {
   const { t } = useLanguage();
 
@@ -267,6 +275,36 @@ export default function ImageMathControls({
         >
           <span>{t.workspace.contaminationOverlay}</span>
           <span>{showFlags ? 'ON' : 'OFF'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onMaskFlagsChange(!maskFlags)}
+          aria-pressed={maskFlags}
+          title={t.workspace.maskFlagsHint}
+          className={[
+            'flex w-full items-center justify-between gap-2 border px-2 py-1.5 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors',
+            maskFlags
+              ? 'border-accent/60 bg-accent/5 text-accent'
+              : 'border-line text-zinc-500 hover:border-line-hover hover:text-zinc-200',
+          ].join(' ')}
+        >
+          <span>{t.workspace.maskFlags}</span>
+          <span>{maskFlags ? 'ON' : 'OFF'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onNativeSamplingChange(!nativeSampling)}
+          aria-pressed={nativeSampling}
+          title={t.workspace.nativeSamplingHint}
+          className={[
+            'flex w-full items-center justify-between gap-2 border px-2 py-1.5 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors',
+            nativeSampling
+              ? 'border-accent/60 bg-accent/5 text-accent'
+              : 'border-line text-zinc-500 hover:border-line-hover hover:text-zinc-200',
+          ].join(' ')}
+        >
+          <span>{t.workspace.nativeSampling}</span>
+          <span>{nativeSampling ? '6.15″' : '480²'}</span>
         </button>
       </div>
     </section>

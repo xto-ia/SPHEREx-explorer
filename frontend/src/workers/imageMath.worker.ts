@@ -11,6 +11,7 @@
 
 import type {
   CandidatesResponse,
+  DisplayRequest,
   DisplayWorkerRequest,
   EpochFrameMessage,
   FrameResponse,
@@ -31,7 +32,13 @@ interface StoredFrame {
   mjd: number;
   image: Float32Array;
   flags: Uint32Array;
+  variance: Float32Array | null;
 }
+
+/** Per-pixel context shared by every epoch: the channel map and wavelength grid. */
+let channelPlane: Uint8Array | null = null;
+let wavelengthGrid: Float32Array | null = null;
+let wavelengthShape = 0;
 
 /** Parse `#rgb` / `#rrggbb` into 0–255 channels; white if the value is invalid. */
 function parseHexColor(hex: string): [number, number, number] {
@@ -69,6 +76,56 @@ function post(message: WorkerResponse, transfer: Transferable[] = []) {
 
 function reset() {
   frames.clear();
+  channelPlane = null;
+  wavelengthGrid = null;
+  wavelengthShape = 0;
+}
+
+/** Bilinear lookup in the coarse WAVE-TAB grid sent with every frame. */
+function wavelengthAt(x: number, y: number): number | null {
+  if (!wavelengthGrid || wavelengthShape < 2) return null;
+  const fx = Math.min(wavelengthShape - 1.0001, Math.max(0, (x / Math.max(size - 1, 1)) * (wavelengthShape - 1)));
+  const fy = Math.min(wavelengthShape - 1.0001, Math.max(0, (y / Math.max(size - 1, 1)) * (wavelengthShape - 1)));
+  const x0 = Math.floor(fx);
+  const y0 = Math.floor(fy);
+  const x1 = Math.min(wavelengthShape - 1, x0 + 1);
+  const y1 = Math.min(wavelengthShape - 1, y0 + 1);
+  const tx = fx - x0;
+  const ty = fy - y0;
+  const top = wavelengthGrid[y0 * wavelengthShape + x0] * (1 - tx) + wavelengthGrid[y0 * wavelengthShape + x1] * tx;
+  const bottom = wavelengthGrid[y1 * wavelengthShape + x0] * (1 - tx) + wavelengthGrid[y1 * wavelengthShape + x1] * tx;
+  const value = top * (1 - ty) + bottom * ty;
+  return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Keep only the pixels the official channel map assigns to the selected
+ * channel. A Level-2 spectral image measures exactly one channel per pixel, so
+ * this is the honest way to show a monochromatic slice; everything else is set
+ * to NaN and renders transparent.
+ */
+function restrictToChannel(
+  pixels: Float32Array,
+  flags: Uint32Array | null,
+  request: DisplayRequest,
+): Float32Array {
+  const channel = request.channel ?? null;
+  const maskFlags = Boolean(request.maskFlags);
+  if (channel === null && !maskFlags) return pixels;
+  if (channel !== null && !channelPlane) return pixels;
+  const out = new Float32Array(pixels.length);
+  for (let i = 0; i < pixels.length; i += 1) {
+    if (channel !== null && channelPlane && channelPlane[i] !== channel) {
+      out[i] = Number.NaN;
+      continue;
+    }
+    if (maskFlags && flags && (flags[i] & CONTAMINATION_MASK) !== 0) {
+      out[i] = Number.NaN;
+      continue;
+    }
+    out[i] = pixels[i];
+  }
+  return out;
 }
 
 function percentile(sorted: Float32Array, fraction: number): number {
@@ -408,7 +465,13 @@ function handleFrameData(message: EpochFrameMessage) {
     mjd: message.mjd,
     image: message.image,
     flags: message.flags ?? new Uint32Array(size * size),
+    variance: message.variance,
   });
+  if (message.channel && message.channel.length) channelPlane = message.channel;
+  if (message.wavelength && message.wavelength.length) {
+    wavelengthGrid = message.wavelength;
+    wavelengthShape = message.lambdaShape;
+  }
 }
 
 function handleDisplay(message: DisplayWorkerRequest) {
@@ -426,12 +489,14 @@ function handleDisplay(message: DisplayWorkerRequest) {
     const first = frames.get(request.epochA);
     const second = frames.get(request.epochB);
     if (!first || !second) throw new Error('epochs not loaded');
+    const pixelsA = restrictToChannel(first.image, first.flags, request);
+    const pixelsB = restrictToChannel(second.image, second.flags, request);
     const perFrame = request.compareScale === 'per-frame';
-    const shared = perFrame ? null : computeStatsPair([first.image, second.image]);
-    const statsA = shared ?? computeStats(first.image, first.flags);
-    const statsB = shared ?? computeStats(second.image, second.flags);
-    const rgbaA = toRgba(first.image, first.flags, statsA, request.stretch);
-    const rgbaB = toRgba(second.image, second.flags, statsB, request.stretch);
+    const shared = perFrame ? null : computeStatsPair([pixelsA, pixelsB]);
+    const statsA = shared ?? computeStats(pixelsA, first.flags);
+    const statsB = shared ?? computeStats(pixelsB, second.flags);
+    const rgbaA = toRgba(pixelsA, first.flags, statsA, request.stretch);
+    const rgbaB = toRgba(pixelsB, second.flags, statsB, request.stretch);
     const flags = first.flags.buffer.slice(0) as ArrayBuffer;
     const response: FrameResponse = {
       type: 'frame',
@@ -482,6 +547,8 @@ function handleDisplay(message: DisplayWorkerRequest) {
     mjd = frames.get(request.epochB)?.mjd ?? 0;
   }
 
+  pixels = restrictToChannel(pixels, flags, request);
+  if (request.channel) label = `${label} · ch ${request.channel}`;
   const stats = computeStats(pixels, flags);
   const rgba = toRgba(pixels, flags, stats, request.stretch);
   const response: FrameResponse = {
@@ -512,6 +579,7 @@ function handleProbe(message: ProbeWorkerRequest) {
   const y = Math.max(0, Math.min(size - 1, Math.round(message.y)));
   const index = y * size + x;
   const sky = skyFromPixel(x, y);
+  const variance = frame.variance ? frame.variance[index] : Number.NaN;
   const response: ProbeResponse = {
     type: 'probe',
     requestId: message.requestId,
@@ -521,6 +589,10 @@ function handleProbe(message: ProbeWorkerRequest) {
     dec: sky.dec,
     xArcsec: sky.xArcsec,
     yArcsec: sky.yArcsec,
+    sigma: Number.isFinite(variance) && variance >= 0 ? Math.sqrt(variance) : null,
+    channel: channelPlane ? channelPlane[index] : 0,
+    wavelength: wavelengthAt(x, y),
+    bandwidth: null,
   };
   post(response);
 }

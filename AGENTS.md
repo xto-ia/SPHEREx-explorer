@@ -10,12 +10,17 @@ no preview engine and no generated fallback imagery anywhere in the codebase.
   - reads Level-2 FITS planes lazily over HTTP Range requests (62 MB products, ~2 MB per cutout),
   - resamples every epoch onto a common SIP-aware sky grid,
   - decodes the FLAGS bitmask, the VARIANCE plane and the `WAVE-TAB` wavelength table,
-  - extracts the real 102-channel spectrum (6 detectors × 17 channels) and queries Gaia TAP, IRSA TAP (WISE) and CADC TAP (NEOSSat),
+  - carries the **official** per-pixel channel index from the IRSA `spectral_channels`
+    calibration product (0–18) and the authoritative 102-channel table
+    (centre, edges, R, bandwidth) — never an even split of a band,
+  - builds real spectra by **multi-visit aperture photometry**: one spectral image per
+    visit, 2×FWHM aperture, local annulus background, VARIANCE-based errors, flux in µJy,
+    and queries Gaia TAP, IRSA TAP (WISE) and CADC TAP (NEOSSat),
   - keeps a **5 GB disk cache** (`backend/cache/`) with least-recently-used eviction.
   Current deployment target: the user's own PC (`uvicorn main:app --port 8787`).
 - **Frontend (`frontend/`)** — receives compact float planes from the backend and keeps
   only the interactive math in `imageMath.worker.ts` (stretch, co-add, difference,
-  flag overlay, peak finding, pixel probes). No archival parsing in the browser.
+  flag overlay, channel masking, peak finding, pixel probes). No archival parsing in the browser.
 - **Honesty rule:** when a field, epoch or detector has no product, or the archive is
   unreachable, the UI says so ("NO COVERAGE", "EPOCHS NOT LOADED"). It must never draw
   invented pixels.
@@ -36,14 +41,15 @@ no preview engine and no generated fallback imagery anywhere in the codebase.
   - Blink Comparator Viewport: Plays the real available epochs (Play/Pause, FPS slider, Ping-Pong loop, manual epoch scrubber).
   - Image Arithmetic (Worker): Blink (raw epochs), Co-Add (sum/average), Difference (Epoch B − Epoch A) and Before/After compare (draggable divider between any two epochs) on backend-resampled real frames.
     In compare mode both halves share one p1/p99 brightness scale by default (so a real flux change stays visible across the seam); the panel can switch to per-frame normalization. The divider position is view state only and stays out of the URL.
-  - 6 Detector Arrays: D1–D6 (0.75–5.0 µm) plus an "all arrays" stack; the band slider drives the 102-channel spectrum selection.
-  - On-the-Fly Spectrum: clicking the sky extracts the real 102-channel spectrum from the six WAVE-TAB calibrated detector planes.
+  - Detector Arrays & Channels: D1–D6 with the official band edges (0.743–1.116, 1.099–1.651, 1.636–2.440, 2.422–3.827, 3.814–4.426, 4.418–5.009 µm). A Level-2 frame is a *spectral image* (one wavelength per pixel), so the "Channels" tab isolates one of the 17 official channels of the active detector by masking every pixel the mission assigns elsewhere; the "Arrays" tab shows the whole spectral image. Channels that do not fall inside the current cutout are flagged, with a button that widens the field to 3.6°.
+  - Quick look: an explicitly labelled mean of the six detector planes (it mixes wavelengths) kept as a navigation aid, never presented as a measurement.
+  - On-the-Fly Spectrum: a click runs multi-visit aperture photometry — one spectral image per visit, 2×FWHM aperture, local annulus background, VARIANCE-based errors — and plots flux (µJy) against the channel wavelength, with the selected channel marked by a vertical guide and its value.
   - Overlays: real Gaia DR3 (proper-motion vectors), WISE detections and CSA NEOSSat frame footprints (CADC `s_region` polygons, exposure windows, `target_moving` flag) queried by the backend. NEOSSat is a locator layer: no pixel data, no invented tracks — a path is drawn only for objects CADC flags as moving.
-  - Metadata: real MJD, exposure, detector, pixel value in MJy/sr and the FLAGS bitmask.
-  - URL State Sync: Sync ra, dec, fov, target, mode, and band with URL query parameters for easy embedding.
+  - Metadata: real MJD, exposure, detector, pixel value in MJy/sr with σ from VARIANCE, the per-pixel channel and wavelength, and the FLAGS bitmask.
+  - URL State Sync: Sync ra, dec, fov, target, mode, band/array, mask and the rest with URL query parameters for easy embedding.
 - Page 3: Documentation (/docs):
   - Full bilingual (EN/UA) interactive documentation covering:
-    1. Capabilities & Scientific Tools (Blink, Difference Imaging, 6-Detector Co-adding, 102-Band Spectroscopy).
+    1. Capabilities & Scientific Tools (Blink, Difference Imaging, official channel isolation, multi-visit spectroscopy).
     2. Data Sources & Archive Pipelines (NASA/IPAC IRSA, WISE/NEOWISE, ESA Gaia DR3, CSA CADC NEOSSat).
     3. User Guide & Walkthroughs for the 5 test targets (Barnard's Star, Epsilon Indi B, WISE 0855, RW Aurigae, R Draconis).
     4. URL Query & Iframe Embed API Documentation with copyable code snippets.
