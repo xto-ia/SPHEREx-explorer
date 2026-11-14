@@ -20,6 +20,7 @@ export default function DocsPage() {
 
   const sections = [
     { id: 'capabilities', label: t.docs.sectionCapabilities },
+    { id: 'modes', label: t.docs.sectionModes },
     { id: 'sources', label: t.docs.sectionSources },
     { id: 'pipeline', label: t.docs.sectionPipeline },
     { id: 'walkthrough', label: t.docs.sectionWalkthrough },
@@ -93,6 +94,89 @@ export default function DocsPage() {
                 </li>
               ))}
             </ul>
+          </section>
+
+          {/* Two workspace modes */}
+          <section id="modes" aria-labelledby="modes-title" className="scroll-mt-20">
+            <h2 id="modes-title" className="text-lg sm:text-xl">
+              {t.docs.sectionModes}
+            </h2>
+            <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-zinc-500">
+              {t.docs.modesBody}
+            </p>
+
+            <div className="mt-4 grid gap-px border border-line bg-line sm:grid-cols-2">
+              {[
+                {
+                  title: t.docs.modeSimpleTitle,
+                  audience: t.docs.modeSimpleFor,
+                  points: t.docs.modeSimplePoints,
+                  tag: 'SIMPLE',
+                },
+                {
+                  title: t.docs.modeAdvancedTitle,
+                  audience: t.docs.modeAdvancedFor,
+                  points: t.docs.modeAdvancedPoints,
+                  tag: 'ADVANCED',
+                },
+              ].map((mode) => (
+                <article key={mode.tag} className="bg-canvas/90 p-4">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3 className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-100">
+                      {mode.title}
+                    </h3>
+                    <span className="font-mono text-[9px] text-zinc-700">{mode.tag}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-accent/80">{mode.audience}</p>
+                  <ul className="mt-3 space-y-1.5">
+                    {mode.points.map((point) => (
+                      <li key={point} className="flex gap-2 text-[12px] leading-relaxed text-zinc-500">
+                        <span aria-hidden="true" className="mt-[3px] h-1 w-1 shrink-0 rounded-full bg-accent/70" />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+
+            <h3 className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400">
+              {t.docs.modeFeaturesTitle}
+            </h3>
+            <div className="mt-2 overflow-x-auto border border-line bg-canvas/90">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-line">
+                    <th className="px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.modeFeatureName}
+                    </th>
+                    <th className="w-16 px-3 py-2 text-center font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.modeFeatureSimple}
+                    </th>
+                    <th className="w-20 px-3 py-2 text-center font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.modeFeatureAdvanced}
+                    </th>
+                    <th className="px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.modeFeatureNote}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.docs.modeFeatures.map((feature) => (
+                    <tr key={feature.name} className="border-b border-line/60 last:border-b-0">
+                      <td className="px-3 py-2 text-[11px] leading-relaxed text-zinc-300">{feature.name}</td>
+                      <td className="px-3 py-2 text-center font-mono text-[11px] text-zinc-400">
+                        {feature.simple ? '✓' : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-center font-mono text-[11px] text-zinc-400">
+                        {feature.advanced ? '✓' : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-[11px] leading-relaxed text-zinc-500">{feature.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
 
           {/* Sources */}

@@ -26,6 +26,7 @@ import { useSkyEngine } from '../hooks/useSkyEngine';
 import BlinkViewport from '../components/workspace/BlinkViewport';
 import ImageMathControls from '../components/workspace/ImageMathControls';
 import BandArraySelector from '../components/workspace/BandArraySelector';
+import SimpleArraySelector from '../components/workspace/SimpleArraySelector';
 import CatalogOverlays from '../components/workspace/CatalogOverlays';
 import MetadataInspector from '../components/workspace/MetadataInspector';
 import SpectrumPlotter from '../components/workspace/SpectrumPlotter';
@@ -161,8 +162,11 @@ export default function WorkspacePage() {
       epochB,
       coaddMethod,
       compareScale,
-      channel: state.channel.type === 'band' ? bandAt(state.channel.band).subchan : null,
-      maskFlags: state.maskFlags,
+      channel:
+        state.ui === 'advanced' && state.channel.type === 'band'
+          ? bandAt(state.channel.band).subchan
+          : null,
+      maskFlags: state.ui === 'advanced' && state.maskFlags,
       stretch: {
         stretch: state.stretch,
         gain: state.gain,
@@ -184,6 +188,7 @@ export default function WorkspacePage() {
     state.maskFlags,
     state.channel.band,
     state.channel.type,
+    state.ui,
     coaddMethod,
     compareScale,
     bandSelection.bandKey,
@@ -355,6 +360,32 @@ export default function WorkspacePage() {
     [probePixel, ready],
   );
 
+  const [pendingTarget, setPendingTarget] = useState<{ ra: number; dec: number } | null>(null);
+
+  const buildSpectrum = useCallback(
+    async (ra: number, dec: number) => {
+      const token = ++spectrumTokenRef.current;
+      setPendingTarget(null);
+      setSpectrumLoading(true);
+      setSpectrumError(null);
+      setSpectrumOpen(true);
+      try {
+        // One measurement per visit across every channel the survey recorded
+        // here: this is a real spectrum, not a column scan of one exposure.
+        const data = await fetchSpectrum(ra, dec, state.fov, { maxProducts: 96 });
+        if (token !== spectrumTokenRef.current) return;
+        setSpectrum(data);
+      } catch (cause) {
+        if (token !== spectrumTokenRef.current) return;
+        setSpectrum(null);
+        setSpectrumError(cause instanceof Error ? cause.message : 'spectrum unavailable');
+      } finally {
+        if (token === spectrumTokenRef.current) setSpectrumLoading(false);
+      }
+    },
+    [state.fov],
+  );
+
   const handleSelect = useCallback(
     async (x: number, y: number, epoch: number) => {
       if (!ready) return;
@@ -381,27 +412,16 @@ export default function WorkspacePage() {
         // The worker may not hold this epoch yet; the pixel fallback above is
         // already the same projection, so the spectrum still follows the click.
       }
-      const token = ++spectrumTokenRef.current;
-      setSpectrumLoading(true);
-      setSpectrumError(null);
-      try {
-        // One measurement per visit across every channel the survey recorded
-        // here: this is a real spectrum, not a column scan of one exposure.
-        const data = await fetchSpectrum(targetRa, targetDec, state.fov, {
-          maxProducts: 96,
-        });
-        if (token !== spectrumTokenRef.current) return;
-        setSpectrum(data);
+      if (state.ui === 'simple') {
+        // Beginners should not pay 1-3 minutes of archive scanning by accident:
+        // the click only selects the source, the panel asks before it starts.
+        setPendingTarget({ ra: targetRa, dec: targetDec });
         setSpectrumOpen(true);
-      } catch (cause) {
-        if (token !== spectrumTokenRef.current) return;
-        setSpectrum(null);
-        setSpectrumError(cause instanceof Error ? cause.message : 'spectrum unavailable');
-      } finally {
-        if (token === spectrumTokenRef.current) setSpectrumLoading(false);
+        return;
       }
+      void buildSpectrum(targetRa, targetDec);
     },
-    [probePixel, ready, state.ra, state.dec, state.fov, frameSize],
+    [probePixel, ready, state.ra, state.dec, state.fov, state.ui, frameSize, buildSpectrum],
   );
 
   const handleCandidateSelect = useCallback(
@@ -683,6 +703,27 @@ export default function WorkspacePage() {
           )}
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <div
+              role="group"
+              aria-label={t.workspace.uiMode}
+              className="grid grid-cols-2 gap-px border border-line bg-line"
+            >
+              {(['simple', 'advanced'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => update({ ui: mode })}
+                  aria-pressed={state.ui === mode}
+                  className={`px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+                    state.ui === mode
+                      ? 'bg-accent/10 text-accent'
+                      : 'bg-canvas text-zinc-500 hover:text-zinc-200'
+                  }`}
+                >
+                  {mode === 'simple' ? t.workspace.uiSimple : t.workspace.uiAdvanced}
+                </button>
+              ))}
+            </div>
             <span className="chip">
               {t.workspace.mode} · {modeLabel}
             </span>
@@ -724,6 +765,7 @@ export default function WorkspacePage() {
                   status={engineStatus}
                   error={engineError}
                   channelNotice={
+                    state.ui === 'advanced' &&
                     state.channel.type === 'band' &&
                     engine.availableChannels.length > 0 &&
                     !engine.availableChannels.includes(bandAt(state.channel.band).subchan)
@@ -790,14 +832,22 @@ export default function WorkspacePage() {
             </div>
 
             <aside className="min-w-0 space-y-px border border-line bg-line">
-              <BandArraySelector
-                channel={state.channel}
-                availableChannels={engine.availableChannels}
-                onSelectBand={(band) => update({ band })}
-                onSelectArray={(array) => update({ array, band: undefined })}
-                onSelectAll={() => update({ band: 0 })}
-                onWidenField={() => update({ fov: 3.6 })}
-              />
+              {state.ui === 'simple' ? (
+                <SimpleArraySelector
+                  channel={state.channel}
+                  onSelectArray={(array) => update({ array, band: undefined })}
+                  onSelectAll={() => update({ band: 0 })}
+                />
+              ) : (
+                <BandArraySelector
+                  channel={state.channel}
+                  availableChannels={engine.availableChannels}
+                  onSelectBand={(band) => update({ band })}
+                  onSelectArray={(array) => update({ array, band: undefined })}
+                  onSelectAll={() => update({ band: 0 })}
+                  onWidenField={() => update({ fov: 3.6 })}
+                />
+              )}
 
               <ImageMathControls
                 mode={state.mode}
@@ -811,6 +861,7 @@ export default function WorkspacePage() {
                 showFlags={state.showFlags}
                 maskFlags={state.maskFlags}
                 nativeSampling={nativeSampling}
+                simple={state.ui === 'simple'}
                 onModeChange={changeMode}
                 onCoaddMethodChange={setCoaddMethod}
                 onCompareScaleChange={setCompareScale}
@@ -833,6 +884,7 @@ export default function WorkspacePage() {
                 fieldRa={state.ra}
                 fieldDec={state.dec}
                 detector={detector}
+                simple={state.ui === 'simple'}
               />
 
               <FieldNotes
@@ -851,9 +903,17 @@ export default function WorkspacePage() {
               error={spectrumError}
               open={spectrumOpen}
               selectedBand={Math.max(1, Math.min(102, selectedBandIndex))}
+              simple={state.ui === 'simple'}
+              pending={pendingTarget !== null}
+              onBuild={
+                pendingTarget
+                  ? () => void buildSpectrum(pendingTarget.ra, pendingTarget.dec)
+                  : undefined
+              }
               onToggle={() => setSpectrumOpen(!spectrumOpen)}
               onClose={() => {
                 setSpectrum(null);
+                setPendingTarget(null);
                 setSelection(null);
               }}
               onSelectBand={(band) => update({ band })}

@@ -38,6 +38,7 @@ no preview engine and no generated fallback imagery anywhere in the codebase.
   - Right Column: Interactive 3D satellite viewer (SpherexModelCanvas.tsx) rendering /models/spherex.glb over a cosmic starfield. Must use top-of-file configuration constants (MODEL_CONFIG) for initial tilt angles and slow axial rotation around the spacecraft's central symmetry axis.
   - Bottom Section: Overview of the SPHEREx mission (102 near-IR bands, 6-month all-sky survey) and NASA Space Apps Challenge context.
 - Page 2: Analysis Workspace (/workspace):
+  - Two UI modes over the same real data (`?ui=simple|advanced`, simple by default, remembered in localStorage). Simple hides the instrument controls (channel isolation, mask/native toggles, molecular markers, percentile stats) and asks before starting a spectrum scan; Advanced exposes the full instrument view. Both share the same worker math, overlays, movers scan and multi-visit spectrum.
   - Blink Comparator Viewport: Plays the real available epochs (Play/Pause, FPS slider, Ping-Pong loop, manual epoch scrubber).
   - Image Arithmetic (Worker): Blink (raw epochs), Co-Add (sum/average), Difference (Epoch B − Epoch A) and Before/After compare (draggable divider between any two epochs) on backend-resampled real frames.
     In compare mode both halves share one p1/p99 brightness scale by default (so a real flux change stays visible across the seam); the panel can switch to per-frame normalization. The divider position is view state only and stays out of the URL.
@@ -50,9 +51,10 @@ no preview engine and no generated fallback imagery anywhere in the codebase.
 - Page 3: Documentation (/docs):
   - Full bilingual (EN/UA) interactive documentation covering:
     1. Capabilities & Scientific Tools (Blink, Difference Imaging, official channel isolation, multi-visit spectroscopy).
-    2. Data Sources & Archive Pipelines (NASA/IPAC IRSA, WISE/NEOWISE, ESA Gaia DR3, CSA CADC NEOSSat).
-    3. User Guide & Walkthroughs for the 5 test targets (Barnard's Star, Epsilon Indi B, WISE 0855, RW Aurigae, R Draconis).
-    4. URL Query & Iframe Embed API Documentation with copyable code snippets.
+    2. Two workspace modes (Simple vs Advanced): what each shows, what it hides, who it is for, and a feature-availability table.
+    3. Data Sources & Archive Pipelines (NASA/IPAC IRSA, WISE/NEOWISE, ESA Gaia DR3, CSA CADC NEOSSat).
+    4. User Guide & Walkthroughs for the 5 test targets (Barnard's Star, Epsilon Indi B, WISE 0855, RW Aurigae, R Draconis).
+    5. URL Query & Iframe Embed API Documentation with copyable code snippets.
 
 ## 3. UI Style
 

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { findTargetBySlug, TEST_TARGETS, type TargetSlug } from '../data/targets';
 import { clamp } from '../lib/format';
 import { toUrlNumber } from '../lib/coords';
+import { readStoredUiMode, storeUiMode, type UiMode } from '../lib/uiMode';
 
 export type WorkspaceMode = 'blink' | 'coadd' | 'diff' | 'compare';
 export type StretchMode = 'asinh' | 'linear' | 'sqrt' | 'log';
@@ -25,6 +26,8 @@ export interface WorkspaceState {
    * whole spectral image of one detector, `all` is the six-detector quick look.
    */
   channel: { type: ChannelType; band: number; array: number };
+  /** Simple beginner surface or the full instrument view. */
+  ui: UiMode;
   epoch: number;
   epochA: number;
   epochB: number;
@@ -52,8 +55,10 @@ export interface WorkspacePatch {
   fov?: number;
   target?: TargetSlug | null;
   mode?: WorkspaceMode;
+  channel?: { type: ChannelType; band: number; array: number };
   band?: number;
   array?: number;
+  ui?: UiMode;
   epoch?: number;
   epochA?: number;
   epochB?: number;
@@ -120,6 +125,11 @@ export function readWorkspaceState(params: URLSearchParams): WorkspaceState {
       : 0;
   const array = Math.round(clamp(parseNumber(arrayParam, defaultArray), 0, 6));
   const channelType: ChannelType = band > 0 ? 'band' : array > 0 ? 'array' : 'all';
+  const uiParam = params.get('ui');
+  const ui: UiMode =
+    uiParam === 'advanced' || uiParam === 'simple'
+      ? uiParam
+      : readStoredUiMode();
 
   const overlayParam = params.get('ovl');
   const overlaySet = overlayParam
@@ -141,6 +151,7 @@ export function readWorkspaceState(params: URLSearchParams): WorkspaceState {
       band: band > 0 ? band : 44,
       array: array > 0 ? array : 3,
     },
+    ui,
     epoch: Math.round(clamp(parseNumber(params.get('epoch'), 0), 0, MAX_EPOCHS - 1)),
     epochA: Math.round(clamp(parseNumber(params.get('a'), 0), 0, MAX_EPOCHS - 1)),
     epochB: Math.round(clamp(parseNumber(params.get('b'), MAX_EPOCHS - 1), 0, MAX_EPOCHS - 1)),
@@ -215,8 +226,11 @@ export function useUrlSync() {
       set('gain', (patch.gain ?? current.gain).toFixed(1).replace(/\.0$/, ''));
       set('flags', (patch.showFlags ?? current.showFlags) ? 1 : 0);
       set('mask', (patch.maskFlags ?? current.maskFlags) ? 1 : 0);
+      const ui = patch.ui ?? current.ui;
+      storeUiMode(ui);
+      set('ui', ui);
 
-      let band = current.channel.type === 'all' ? 0 : current.channel.band;
+      let band = current.channel.type === 'band' ? current.channel.band : 0;
       let array = current.channel.type === 'array' ? current.channel.array : 0;
 
       if (patch.band !== undefined) {

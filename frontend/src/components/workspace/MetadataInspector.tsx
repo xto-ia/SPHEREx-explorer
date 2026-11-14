@@ -17,6 +17,8 @@ interface MetadataInspectorProps {
   fieldRa: number;
   fieldDec: number;
   detector: number;
+  /** Beginner surface: hide the percentile statistics and the per-pixel physics. */
+  simple?: boolean;
 }
 
 export default function MetadataInspector({
@@ -28,6 +30,7 @@ export default function MetadataInspector({
   fieldRa,
   fieldDec,
   detector,
+  simple = false,
 }: MetadataInspectorProps) {
   const { t } = useLanguage();
   const decoded = probe ? decodeFlags(probe.flags) : [];
@@ -94,12 +97,14 @@ export default function MetadataInspector({
                 </span>
               ) : null}
             </p>
-            <p className="font-mono text-[9px] text-zinc-500">
-              {probe.channel >= 1 && probe.channel <= 17
-                ? `${t.workspace.channelShort} ${probe.channel}`
-                : t.workspace.channelOutside}
-              {probe.wavelength !== null ? ` · λ ${probe.wavelength.toFixed(4)} µm` : ''}
-            </p>
+            {!simple && (
+              <p className="font-mono text-[9px] text-zinc-500">
+                {probe.channel >= 1 && probe.channel <= 17
+                  ? `${t.workspace.channelShort} ${probe.channel}`
+                  : t.workspace.channelOutside}
+                {probe.wavelength !== null ? ` · λ ${probe.wavelength.toFixed(4)} µm` : ''}
+              </p>
+            )}
             <p className="font-mono text-[9px] text-zinc-500">
               {t.workspace.flagsShort}: 0x{probe.flags.toString(16).toUpperCase()}
             </p>
@@ -130,19 +135,21 @@ export default function MetadataInspector({
         )}
       </div>
 
-      <dl className="mt-2 grid grid-cols-4 gap-px border border-line bg-line">
-        {[
-          { label: 'p1', value: frame ? formatNumber(frame.stats.p1, 2) : '—' },
-          { label: 'median', value: frame ? formatNumber(frame.stats.median, 2) : '—' },
-          { label: 'p99', value: frame ? formatNumber(frame.stats.p99, 2) : '—' },
-          { label: t.workspace.flagged, value: frame ? formatPercent(frame.stats.flaggedFraction, 1) : '—' },
-        ].map((item) => (
-          <div key={item.label} className="bg-canvas px-1.5 py-1">
-            <dt className="font-mono text-[8px] uppercase tracking-[0.08em] text-zinc-600">{item.label}</dt>
-            <dd className="font-mono text-[10px] text-zinc-300">{item.value}</dd>
-          </div>
-        ))}
-      </dl>
+      {!simple && (
+        <dl className="mt-2 grid grid-cols-4 gap-px border border-line bg-line">
+          {[
+            { label: 'p1', value: frame ? formatNumber(frame.stats.p1, 2) : '—' },
+            { label: 'median', value: frame ? formatNumber(frame.stats.median, 2) : '—' },
+            { label: 'p99', value: frame ? formatNumber(frame.stats.p99, 2) : '—' },
+            { label: t.workspace.flagged, value: frame ? formatPercent(frame.stats.flaggedFraction, 1) : '—' },
+          ].map((item) => (
+            <div key={item.label} className="bg-canvas px-1.5 py-1">
+              <dt className="font-mono text-[8px] uppercase tracking-[0.08em] text-zinc-600">{item.label}</dt>
+              <dd className="font-mono text-[10px] text-zinc-300">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       <p className="mt-2 font-mono text-[8px] leading-relaxed text-zinc-600">
         {t.workspace.metadataSource}: {formatRa(fieldRa)} / {formatDec(fieldDec)} ·{' '}

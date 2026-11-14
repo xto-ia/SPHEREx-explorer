@@ -12,6 +12,11 @@ interface SpectrumPlotterProps {
   onClose: () => void;
   selectedBand: number;
   onSelectBand: (band: number) => void;
+  /** Beginner surface: plain-language summary, explicit build step. */
+  simple?: boolean;
+  /** A source is selected but the multi-visit scan has not been started. */
+  pending?: boolean;
+  onBuild?: () => void;
 }
 
 const PADDING = { left: 52, right: 16, top: 14, bottom: 24 };
@@ -36,6 +41,9 @@ export default function SpectrumPlotter({
   onClose,
   selectedBand,
   onSelectBand,
+  simple = false,
+  pending = false,
+  onBuild,
 }: SpectrumPlotterProps) {
   const { t } = useLanguage();
 
@@ -130,9 +138,11 @@ export default function SpectrumPlotter({
               <span>
                 {spectrum.channelsCovered} {t.workspace.spectrumChannels}
               </span>
-              <span>
-                {spectrum.apertureArcsec.toFixed(0)}″ {t.workspace.spectrumAperture}
-              </span>
+              {!simple && (
+                <span>
+                  {spectrum.apertureArcsec.toFixed(0)}″ {t.workspace.spectrumAperture}
+                </span>
+              )}
             </>
           ) : (
             <span>{t.workspace.spectrumClick}</span>
@@ -165,7 +175,21 @@ export default function SpectrumPlotter({
             <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-rose-300">{error}</p>
           )}
 
-          {!loading && !error && !spectrum && (
+          {!loading && !error && !spectrum && pending && onBuild && (
+            <div className="flex flex-col items-start gap-2 border border-line bg-black/20 px-3 py-3">
+              <p className="font-mono text-[10px] leading-relaxed text-zinc-400">
+                {t.workspace.spectrumPending}
+              </p>
+              <button type="button" onClick={onBuild} className="btn-primary !px-3 !py-1.5 !text-[10px]">
+                {t.workspace.spectrumBuild}
+              </button>
+              <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-zinc-600">
+                {t.workspace.spectrumBuildHint}
+              </p>
+            </div>
+          )}
+
+          {!loading && !error && !spectrum && !pending && (
             <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-600">
               {t.workspace.spectrumEmpty}
             </p>
@@ -252,8 +276,8 @@ export default function SpectrumPlotter({
                   return (
                     <g
                       key={index}
-                      onClick={() => point.channel && onSelectBand(point.channel)}
-                      className="cursor-pointer"
+                      onClick={simple || !point.channel ? undefined : () => onSelectBand(point.channel as number)}
+                      className={simple ? undefined : 'cursor-pointer'}
                     >
                       {error > 0 && (
                         <line
@@ -312,25 +336,26 @@ export default function SpectrumPlotter({
                   {spectrum.productsUsed} {t.workspace.spectrumProducts} · {spectrum.channelsCovered}{' '}
                   {t.workspace.spectrumChannels}
                 </span>
-                {spectrum.outsideChannels > 0 && (
+                {!simple && spectrum.outsideChannels > 0 && (
                   <span>
                     {spectrum.outsideChannels} {t.workspace.spectrumOutside}
                   </span>
                 )}
-                <span>{t.workspace.spectrumApertureNote}</span>
-                {ARRAY_LABELS.map((label, index) => (
-                  <span key={label} className="flex items-center gap-1">
-                    <span
-                      aria-hidden="true"
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: ARRAY_COLORS[index] }}
-                    />
-                    {label}
-                  </span>
-                ))}
+                {!simple && <span>{t.workspace.spectrumApertureNote}</span>}
+                {!simple &&
+                  ARRAY_LABELS.map((label, index) => (
+                    <span key={label} className="flex items-center gap-1">
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: ARRAY_COLORS[index] }}
+                      />
+                      {label}
+                    </span>
+                  ))}
               </div>
               <p className="mt-1 font-mono text-[8px] leading-relaxed tracking-[0.04em] text-zinc-600">
-                {spectrum.note}
+                {simple ? t.workspace.spectrumSimpleNote : spectrum.note}
               </p>
             </>
           )}
