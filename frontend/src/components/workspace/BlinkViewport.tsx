@@ -543,68 +543,90 @@ export default function BlinkViewport({
       className={`bg-canvas/90 ${fullscreen ? 'flex h-screen flex-col overflow-auto' : ''}`}
       aria-labelledby="viewport-title"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Crosshair size={12} className="text-accent" aria-hidden="true" />
-          <h2
-            id="viewport-title"
-            className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-200"
-          >
-            {t.workspace.viewportTitle}
-          </h2>
+      <div className="border-b border-line px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Crosshair size={12} className="text-accent" aria-hidden="true" />
+            <h2
+              id="viewport-title"
+              className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-200"
+            >
+              {t.workspace.viewportTitle}
+            </h2>
+          </div>
+          {/*
+            Only calm labels belong in this wrapping row: a chip that changes
+            width while the epochs blink re-wraps its neighbours and drags the
+            whole panel with it. The epoch counter therefore keeps a constant
+            three-character footprint (`—/—` while the archive is loading).
+          */}
+          <div className="flex flex-wrap items-center gap-2 tabular-nums">
+            <span className="chip normal-case tracking-[0.06em]">{bandLabel}</span>
+            {mode === 'diff' ? (
+              <span className="chip">
+                E{epochAPosition + 1} → E{epochBPosition + 1}
+              </span>
+            ) : mode === 'coadd' ? (
+              <span className="chip">
+                {t.workspace.modeCoadd} · {epochCount} {t.common.epochs}
+              </span>
+            ) : (
+              <span className="chip">
+                {t.common.epoch} {epochCount > 0 ? `${epochPosition + 1}/${epochCount}` : '—/—'}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={onToggleFlags}
+              className={`chip transition-colors ${showFlags ? 'border-warn/60 text-warn' : 'hover:border-line-hover hover:text-zinc-200'}`}
+              aria-pressed={showFlags}
+              title={t.workspace.contaminationOverlay}
+            >
+              {t.workspace.flagsToggle}
+            </button>
+            <button
+              type="button"
+              onClick={downloadFrame}
+              className="chip transition-colors hover:border-line-hover hover:text-zinc-200"
+              title={t.workspace.downloadFrame}
+              aria-label={t.workspace.downloadFrame}
+            >
+              <Download size={9} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="chip transition-colors hover:border-line-hover hover:text-zinc-200"
+              title={fullscreen ? t.workspace.exitFullscreen : t.workspace.fullscreen}
+              aria-label={fullscreen ? t.workspace.exitFullscreen : t.workspace.fullscreen}
+            >
+              {fullscreen ? <Minimize2 size={9} aria-hidden="true" /> : <Maximize2 size={9} aria-hidden="true" />}
+            </button>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="chip normal-case tracking-[0.06em]">{bandLabel}</span>
-          {mode === 'diff' ? (
-            <span className="chip">
-              E{epochAPosition + 1} → E{epochBPosition + 1}
-            </span>
-          ) : mode === 'coadd' ? (
-            <span className="chip">
-              {t.workspace.modeCoadd} · {epochCount} {t.common.epochs}
-            </span>
-          ) : (
-            <span className="chip">
-              {t.common.epoch} {epochCount > 0 ? `${epochPosition + 1}/${epochCount}` : '—'}
-            </span>
-          )}
+
+        {/*
+          Per-frame readout on its own fixed-height line.
+          The render status, the timing and the p99 change with every blinked
+          frame and have wildly different text widths. Inside the wrapping chip
+          row above they re-flowed the buttons and, on phone-width headers, added
+          or dropped a whole wrapped line, which pushed the image (and everything
+          below it) up and down at playback speed. A reserved one-line slot keeps
+          the panel geometry identical no matter what this line says.
+        */}
+        <div className="mt-1.5 flex h-4 items-center gap-1.5 overflow-hidden font-mono text-[9px] uppercase leading-none tracking-[0.14em] text-zinc-500">
           {rendering || status ? (
-            <span className="chip text-accent">
-              <Loader2 size={9} className="animate-spin" aria-hidden="true" />
-              {status ?? t.workspace.rendering}
-            </span>
+            <>
+              <Loader2 size={9} className="shrink-0 animate-spin text-accent" aria-hidden="true" />
+              <span className="truncate text-accent">{status ?? t.workspace.rendering}</span>
+            </>
           ) : frame ? (
-            <span className="chip normal-case tracking-[0.06em]">
+            <span className="truncate">
               {frame.computeMs} ms · {formatNumber(frame.stats.p99, 2)} p99
             </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={onToggleFlags}
-            className={`chip transition-colors ${showFlags ? 'border-warn/60 text-warn' : 'hover:border-line-hover hover:text-zinc-200'}`}
-            aria-pressed={showFlags}
-            title={t.workspace.contaminationOverlay}
-          >
-            {t.workspace.flagsToggle}
-          </button>
-          <button
-            type="button"
-            onClick={downloadFrame}
-            className="chip transition-colors hover:border-line-hover hover:text-zinc-200"
-            title={t.workspace.downloadFrame}
-            aria-label={t.workspace.downloadFrame}
-          >
-            <Download size={9} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="chip transition-colors hover:border-line-hover hover:text-zinc-200"
-            title={fullscreen ? t.workspace.exitFullscreen : t.workspace.fullscreen}
-            aria-label={fullscreen ? t.workspace.exitFullscreen : t.workspace.fullscreen}
-          >
-            {fullscreen ? <Minimize2 size={9} aria-hidden="true" /> : <Maximize2 size={9} aria-hidden="true" />}
-          </button>
+          ) : (
+            <span className="truncate">{t.workspace.aligningArrays}</span>
+          )}
         </div>
       </div>
 
@@ -764,15 +786,20 @@ export default function BlinkViewport({
               </label>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/70 pt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-600">
-              <span>
+            {/*
+              The epoch label and exposure change with every blinked frame, so
+              the middle cell may never wrap onto a second line: it truncates
+              instead, keeping the row (and the timeline below it) still.
+            */}
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-line/70 pt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-600">
+              <span className="shrink-0">
                 {t.workspace.mode}: {t.workspace.modeBlink}
               </span>
-              <span>
+              <span className="min-w-0 flex-1 truncate text-right">
                 {epoch?.label ?? '—'}
                 {epoch?.exposure ? ` · ${t.workspace.exposure} ${epoch.exposure.toFixed(0)}s` : ''}
               </span>
-              <span className="hidden sm:inline">{t.workspace.keyboardHint}</span>
+              <span className="hidden shrink-0 sm:inline">{t.workspace.keyboardHint}</span>
             </div>
           </div>
 

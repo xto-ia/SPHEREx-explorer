@@ -615,15 +615,21 @@ export default function WorkspacePage() {
               {t.workspace.mode} · {modeLabel}
             </span>
             <span className="chip normal-case tracking-[0.06em]">{bandSelection.bandLabel}</span>
-            {coverage?.covered && (
-              <span
-                className="inline-flex items-center gap-1.5 border border-accent/50 bg-accent/5 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-accent"
-                title={coverage.collection ?? undefined}
-              >
-                <Database size={9} aria-hidden="true" />
-                {t.workspace.dataLive.replace('{n}', String(coverage.productCount))}
-              </span>
-            )}
+            {/*
+              The archive badge is mounted from the first paint and keeps a
+              fixed footprint: adding it after the TAP answer used to wrap the
+              chip cluster onto one more line on phones, dropping the whole
+              viewport down by ~30 px right after the image appeared.
+            */}
+            <span
+              className={`inline-flex min-w-[11rem] items-center justify-center gap-1.5 border border-accent/50 bg-accent/5 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-accent ${
+                coverage?.covered ? '' : 'invisible'
+              }`}
+              title={coverage?.covered ? coverage.collection ?? undefined : undefined}
+            >
+              <Database size={9} aria-hidden="true" />
+              {t.workspace.dataLive.replace('{n}', String(coverage?.productCount ?? 0))}
+            </span>
           </div>
         </form>
       </section>
