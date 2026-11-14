@@ -1,0 +1,214 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    /* Accent palette - overwritten at runtime from src/config/app.config.ts.
+       Bare RGB triplets so Tailwind can append opacity: rgb(var(--accent) / 0.6). */
+    --accent: 16 185 129;
+    --accent-bright: 82 204 158;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-zinc-300 antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-mono font-semibold tracking-tight text-zinc-100;
+  }
+
+  ::selection {
+    background: rgb(var(--accent) / 0.28);
+    color: #ecfdf5;
+  }
+
+  *:focus-visible {
+    outline: none;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  select:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    outline: 1px solid rgb(var(--accent) / 0.7);
+    outline-offset: 1px;
+  }
+
+  /* Compact, square range sliders keep the OpenCode "instrument panel" feel. */
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    accent-color: rgb(var(--accent));
+    border-radius: 0;
+    background: #27272a;
+    cursor: pointer;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 14px;
+    border: 1px solid rgb(var(--accent));
+    border-radius: 0;
+    background: #09090b;
+    box-shadow: inset 0 0 0 2px rgb(var(--accent));
+  }
+
+  input[type='range']::-moz-range-thumb {
+    width: 10px;
+    height: 14px;
+    border: 1px solid rgb(var(--accent));
+    border-radius: 0;
+    background: #09090b;
+    box-shadow: inset 0 0 0 2px rgb(var(--accent));
+  }
+
+  input[type='range']:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #09090b;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border: 2px solid #09090b;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer components {
+  /* Structural panel: 1px hairline, translucent surface, sharp corners. */
+  .panel {
+    @apply border border-line bg-surface backdrop-blur-md;
+  }
+
+  .panel-header {
+    @apply flex items-center justify-between gap-3 border-b border-line px-4 py-3;
+  }
+
+  .kicker {
+    @apply font-mono text-[10px] uppercase tracking-[0.28em] text-accent;
+  }
+
+  .label-mono {
+    @apply font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500;
+  }
+
+  .field {
+    @apply w-full border border-line bg-black/50 px-3 py-2 font-mono text-sm text-zinc-100 transition-colors placeholder:text-zinc-600 hover:border-line-hover focus:border-accent/70 focus-visible:ring-1 focus-visible:ring-accent/40;
+  }
+
+  .field-invalid {
+    @apply border-rose-500/60 focus:border-rose-400 focus-visible:ring-rose-500/40;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 border border-accent bg-accent px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-canvas transition-colors hover:border-accent-bright hover:bg-accent-bright focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:border-line disabled:bg-transparent disabled:text-zinc-600;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 border border-line bg-black/30 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-300 transition-colors hover:border-line-hover hover:text-zinc-100 focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 border border-line bg-black/30 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400;
+  }
+
+  .link-mono {
+    @apply font-mono text-[11px] uppercase tracking-[0.16em] text-accent underline-offset-4 transition-colors hover:text-accent-bright hover:underline;
+  }
+
+  .hairline-grid {
+    background-image:
+      linear-gradient(to right, rgba(39, 39, 42, 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(39, 39, 42, 0.55) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /*
+   * Landing hero stage: fills exactly the first screen below the sticky header
+   * (header 3.5rem + page padding 3.5rem = 7rem at `lg`), so the left column is
+   * centred in the visible area and the stats band below it always starts under
+   * the fold. `dvh` keeps the guarantee while mobile browser chrome collapses;
+   * the `vh` line is the fallback.
+   */
+  .hero-fold {
+    min-height: calc(100vh - 7rem);
+    min-height: calc(100dvh - 7rem);
+  }
+
+  /*
+   * The hero copy column is centred inside the visible area (below the header
+   * and inside the page padding), not just inside the section box, so the gap
+   * under the text matches the gap above it.
+   */
+  .hero-column {
+    min-height: calc(100vh - 10.5rem);
+    min-height: calc(100dvh - 10.5rem);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+

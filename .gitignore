@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Browser-tool artifacts
+.playwright-mcp/
+*.png
+!frontend/public/**/*.png
+
+# Scratch debugging
+frontend/debug-*
+# Local temporary / auxiliary files (never pushed)
+tmp/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.sw?
+
+# Python (optional stateless CORS proxy only)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Backend disk cache (regenerated on demand)
+backend/cache/
+
