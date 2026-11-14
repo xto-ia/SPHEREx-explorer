@@ -270,8 +270,9 @@ const en = {
     compareAfter: 'After (B)',
     compareSameEpoch: 'Same epoch on both sides — pick another visit',
     compareDragHint:
-      'Drag the handle · ←/→ nudge 1% · Shift+←/→ 10% · double-click resets to 50% · V exits',
+      'Drag the line to wipe · drag the grip along the line to uncover a source · ←/→ nudge 1% · ↑/↓ slide the grip · double-click resets · V exits',
     splitPosition: 'Divider position',
+    gripPosition: 'grip',
     swapEpochs: 'Swap A / B',
     compareScaleLabel: 'Brightness scale',
     compareSharedStretch: 'Shared',
@@ -845,8 +846,9 @@ const uk: Dictionary = {
     compareAfter: 'Після (B)',
     compareSameEpoch: 'З обох боків та сама епоха — оберіть інший візит',
     compareDragHint:
-      'Тягніть ручку · ←/→ зсув на 1 % · Shift+←/→ на 10 % · подвійний клік повертає 50 % · V вихід',
+      'Тягніть лінію, щоб зсунути шов · тягніть ручку вздовж лінії, щоб відкрити джерело · ←/→ зсув на 1 % · ↑/↓ ручка · подвійний клік скидає · V вихід',
     splitPosition: 'Позиція розділювача',
+    gripPosition: 'ручка',
     swapEpochs: 'Поміняти A / B',
     compareScaleLabel: 'Шкала яскравості',
     compareSharedStretch: 'Спільна',
