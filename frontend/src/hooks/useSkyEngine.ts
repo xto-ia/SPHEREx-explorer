@@ -6,6 +6,7 @@ import type {
   CandidatesResponse,
   DisplayRequest,
   FrameResponse,
+  FrameStats,
   ProbeResponse,
   WorkerRequest,
   WorkerResponse,
@@ -13,12 +14,17 @@ import type {
 
 export interface SkyFrame {
   rgba: Uint8ClampedArray;
+  /** Right-hand plane of a `compare` pair; undefined in every other mode. */
+  rgbaB?: Uint8ClampedArray;
   flags: Uint8Array;
   stats: FrameResponse['stats'];
+  /** `per-frame` compare only: statistics of the B plane. */
+  statsB?: FrameStats;
   epochIndex: number;
   epochA?: number;
   epochB?: number;
   mjd: number;
+  mjdB?: number;
   bandLabel: string;
   meanWavelength: number;
   scaleArcsecPerPixel: number;
@@ -114,12 +120,15 @@ export function useSkyEngine(options: {
         setError(null);
         setFrame({
           rgba: new Uint8ClampedArray(message.rgba),
+          rgbaB: message.rgbaB ? new Uint8ClampedArray(message.rgbaB) : undefined,
           flags: new Uint8Array(message.flags),
           stats: message.stats,
+          statsB: message.statsB,
           epochIndex: message.epochIndex,
           epochA: message.epochA,
           epochB: message.epochB,
           mjd: message.mjd,
+          mjdB: message.mjdB,
           bandLabel: message.bandLabel,
           meanWavelength: message.meanWavelength,
           scaleArcsecPerPixel: message.scaleArcsecPerPixel,
@@ -304,7 +313,9 @@ export function useSkyEngine(options: {
   const hasNeeded = useCallback((request: DisplayRequest): boolean => {
     const loaded = loadedEpochsRef.current;
     if (request.mode === 'raw') return loaded.has(request.epochIndex);
-    if (request.mode === 'diff') return loaded.has(request.epochA) && loaded.has(request.epochB);
+    if (request.mode === 'diff' || request.mode === 'compare') {
+      return loaded.has(request.epochA) && loaded.has(request.epochB);
+    }
     return loaded.size > 0;
   }, []);
 

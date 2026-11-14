@@ -6,8 +6,16 @@
  * difference imaging, flag overlays, peak finding and pixel probes.
  */
 
-export type DisplayMode = 'raw' | 'coadd' | 'diff';
+export type DisplayMode = 'raw' | 'coadd' | 'diff' | 'compare';
 export type StretchName = 'asinh' | 'linear' | 'sqrt' | 'log';
+/**
+ * Brightness reference for the before/after pair.
+ *
+ * `shared` stretches both halves with one p1/p99 taken over A ∪ B, so a real
+ * brightness change between the epochs stays visible across the seam instead
+ * of being normalised away. `per-frame` gives each half its own scale.
+ */
+export type CompareScale = 'shared' | 'per-frame';
 
 export interface BandSelection {
   bandIndices: number[];
@@ -41,6 +49,8 @@ export interface DisplayRequest {
   epochB: number;
   stretch: { stretch: StretchName; gain: number; palette: 'array' | 'signed'; showFlags: boolean };
   coaddMethod: 'sum' | 'mean';
+  /** Only read in `compare` mode; defaults to `shared`. */
+  compareScale?: CompareScale;
 }
 
 export interface DisplayWorkerRequest {
@@ -92,12 +102,17 @@ export interface FrameResponse {
   type: 'frame';
   requestId: number;
   rgba: ArrayBuffer;
+  /** Second plane of a `compare` pair (right-hand / B side). */
+  rgbaB?: ArrayBuffer;
   flags: ArrayBuffer;
   stats: FrameStats;
+  /** `per-frame` compare only: statistics of the B plane. */
+  statsB?: FrameStats;
   epochIndex: number;
   epochA?: number;
   epochB?: number;
   mjd: number;
+  mjdB?: number;
   bandLabel: string;
   meanWavelength: number;
   scaleArcsecPerPixel: number;

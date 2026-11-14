@@ -97,6 +97,32 @@ function computeStats(pixels: Float32Array, flags: Uint32Array | null): FrameSta
   };
 }
 
+/**
+ * One brightness reference for several planes (before/after pairs).
+ *
+ * Percentiles are taken over the union of the planes, each epoch contributing
+ * equally, so the divider never hides a real flux change by normalising the
+ * two halves independently.
+ */
+function computeStatsPair(planes: Float32Array[]): FrameStats {
+  const values: number[] = [];
+  for (const plane of planes) {
+    for (let i = 0; i < plane.length; i += 1) {
+      if (Number.isFinite(plane[i])) values.push(plane[i]);
+    }
+  }
+  const sorted = Float32Array.from(values).sort();
+  return {
+    p1: percentile(sorted, 0.01),
+    median: percentile(sorted, 0.5),
+    p99: percentile(sorted, 0.99),
+    noise: Math.max((percentile(sorted, 0.84) - percentile(sorted, 0.16)) / 2, 1e-6),
+    flaggedFraction: 0,
+    min: sorted.length ? sorted[0] : 0,
+    max: sorted.length ? sorted[sorted.length - 1] : 0,
+  };
+}
+
 function stretchValue(value: number, mode: string, gain: number, low: number, high: number): number {
   const span = Math.max(high - low, 1e-9);
   const normalized = (value - low) / span;
@@ -395,6 +421,41 @@ function handleDisplay(message: DisplayWorkerRequest) {
   let epochB: number | undefined;
   let mjd = frames.get(request.epochIndex)?.mjd ?? 0;
   let label = bandLabel;
+
+  if (request.mode === 'compare') {
+    const first = frames.get(request.epochA);
+    const second = frames.get(request.epochB);
+    if (!first || !second) throw new Error('epochs not loaded');
+    const perFrame = request.compareScale === 'per-frame';
+    const shared = perFrame ? null : computeStatsPair([first.image, second.image]);
+    const statsA = shared ?? computeStats(first.image, first.flags);
+    const statsB = shared ?? computeStats(second.image, second.flags);
+    const rgbaA = toRgba(first.image, first.flags, statsA, request.stretch);
+    const rgbaB = toRgba(second.image, second.flags, statsB, request.stretch);
+    const flags = first.flags.buffer.slice(0) as ArrayBuffer;
+    const response: FrameResponse = {
+      type: 'frame',
+      requestId: message.requestId,
+      rgba: rgbaA.buffer as ArrayBuffer,
+      rgbaB: rgbaB.buffer as ArrayBuffer,
+      flags,
+      stats: statsA,
+      statsB: perFrame ? statsB : undefined,
+      epochIndex: request.epochA,
+      epochA: request.epochA,
+      epochB: request.epochB,
+      mjd: first.mjd,
+      mjdB: second.mjd,
+      bandLabel: `${bandLabel} · A|B`,
+      meanWavelength: bandIndices.length ? 1 : 0,
+      scaleArcsecPerPixel: scaleArcsec,
+      mode: 'compare',
+      computeMs: Math.round(performance.now() - started),
+      cacheHits: frames.size,
+    };
+    post(response, [response.rgba, response.rgbaB as ArrayBuffer, flags]);
+    return;
+  }
 
   if (request.mode === 'raw') {
     const frame = frames.get(request.epochIndex);
