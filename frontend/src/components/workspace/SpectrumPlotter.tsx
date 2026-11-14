@@ -167,18 +167,22 @@ export default function SpectrumPlotter({
                   stroke="#3f3f46"
                 />
                 <path d={path} fill="none" stroke="rgb(var(--accent-bright))" strokeWidth="1.4" />
-                {points.map((point, index) => (
-                  <circle
-                    key={index}
-                    cx={point.x}
-                    cy={point.y}
-                    r={index + 1 === selectedBand ? 3.2 : 1.6}
-                    fill={index + 1 === selectedBand ? '#f43f5e' : 'rgb(var(--accent))'}
-                    opacity={Number.isFinite(point.flux) ? 0.9 : 0}
-                    onClick={() => onSelectBand(index + 1)}
-                    className="cursor-pointer"
-                  />
-                ))}
+                {points.map((point, index) =>
+                  // A channel with no flux has no y coordinate; rendering the
+                  // marker anyway would put NaN into the SVG geometry.
+                  Number.isFinite(point.y) ? (
+                    <circle
+                      key={index}
+                      cx={point.x}
+                      cy={point.y}
+                      r={index + 1 === selectedBand ? 3.2 : 1.6}
+                      fill={index + 1 === selectedBand ? '#f43f5e' : 'rgb(var(--accent))'}
+                      opacity={0.9}
+                      onClick={() => onSelectBand(index + 1)}
+                      className="cursor-pointer"
+                    />
+                  ) : null,
+                )}
                 <text x={4} y={PADDING.top + 6} fill="#71717a" fontSize="9" fontFamily="ui-monospace">
                   {formatNumber(maxFlux, 1)}
                 </text>
