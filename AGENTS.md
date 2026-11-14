@@ -34,7 +34,8 @@ no preview engine and no generated fallback imagery anywhere in the codebase.
   - Bottom Section: Overview of the SPHEREx mission (102 near-IR bands, 6-month all-sky survey) and NASA Space Apps Challenge context.
 - Page 2: Analysis Workspace (/workspace):
   - Blink Comparator Viewport: Plays the real available epochs (Play/Pause, FPS slider, Ping-Pong loop, manual epoch scrubber).
-  - Image Arithmetic (Worker): Blink (raw epochs), Co-Add (sum/average) and Difference (Epoch B − Epoch A) on backend-resampled real frames.
+  - Image Arithmetic (Worker): Blink (raw epochs), Co-Add (sum/average), Difference (Epoch B − Epoch A) and Before/After compare (draggable divider between any two epochs) on backend-resampled real frames.
+    In compare mode both halves share one p1/p99 brightness scale by default (so a real flux change stays visible across the seam); the panel can switch to per-frame normalization. The divider position is view state only and stays out of the URL.
   - 6 Detector Arrays: D1–D6 (0.75–5.0 µm) plus an "all arrays" stack; the band slider drives the 102-channel spectrum selection.
   - On-the-Fly Spectrum: clicking the sky extracts the real 102-channel spectrum from the six WAVE-TAB calibrated detector planes.
   - Overlays: real Gaia DR3 (proper-motion vectors), WISE detections and CSA NEOSSat frame footprints (CADC `s_region` polygons, exposure windows, `target_moving` flag) queried by the backend. NEOSSat is a locator layer: no pixel data, no invented tracks — a path is drawn only for objects CADC flags as moving.

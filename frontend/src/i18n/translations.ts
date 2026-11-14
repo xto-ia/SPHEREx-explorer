@@ -198,7 +198,8 @@ const en = {
 
   workspace: {
     title: 'Analysis workspace',
-    subtitle: 'Blink, co-add and subtract SPHEREx epochs, then read the near-infrared spectrum.',
+    subtitle:
+      'Blink, wipe, co-add and subtract SPHEREx epochs, then read the near-infrared spectrum.',
     sessionLabel: 'Session',
     sessionEmpty: 'No target loaded',
     pickTarget: 'Choose a target on the Explorer page to load epochs.',
@@ -773,7 +774,8 @@ const uk: Dictionary = {
 
   workspace: {
     title: 'Робоче поле аналізу',
-    subtitle: 'Миготіння, додавання та віднімання епох SPHEREx, далі — інфрачервоний спектр.',
+    subtitle:
+      'Миготіння, шторка «до/після», додавання та віднімання епох SPHEREx, далі — інфрачервоний спектр.',
     sessionLabel: 'Сесія',
     sessionEmpty: 'Об’єкт не вибрано',
     pickTarget: 'Виберіть об’єкт на сторінці огляду, щоб завантажити епохи.',
