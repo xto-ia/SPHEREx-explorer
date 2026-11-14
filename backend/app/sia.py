@@ -224,10 +224,12 @@ def coverage(
 
     chosen: str | None = None
     rows: list[dict[str, str]] = []
+    failures = 0
     for collection in collections:
         try:
             rows = query_sia(ra, dec, radius, collection)
         except Exception:  # noqa: BLE001 - upstream failure is a normal state
+            failures += 1
             continue
         if rows:
             chosen = collection
@@ -241,6 +243,9 @@ def coverage(
         "dec": dec,
         "fov": fov,
         "covered": bool(epochs),
+        # Distinguish "the archive says there is nothing here" from "the archive
+        # could not be reached": the UI must not blame the sky for an outage.
+        "archiveError": bool(failures) and failures == len(collections),
         "collection": chosen,
         "productCount": len(rows),
         "epochs": [

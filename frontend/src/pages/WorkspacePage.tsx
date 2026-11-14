@@ -97,6 +97,7 @@ export default function WorkspacePage() {
   const engineError = useMemo(() => {
     if (!rawError) return null;
     if (rawError === 'OFFLINE' || /failed to fetch/i.test(rawError)) return t.workspace.apiOffline;
+    if (rawError === 'ARCHIVE UNREACHABLE') return t.workspace.archiveUnreachable;
     if (rawError === 'NO COVERAGE') return t.workspace.noCoverage;
     if (/no detector data/i.test(rawError)) return t.workspace.noDetectorData;
     if (/frame unavailable|HTTP 404/i.test(rawError)) return t.workspace.noDetectorData;

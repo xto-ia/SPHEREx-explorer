@@ -27,7 +27,7 @@ const en = {
   meta: {
     title: 'SPHEREx Sky Explorer',
     description:
-      'Browser-native blink comparator, image arithmetic and 102-band spectroscopy for the NASA SPHEREx near-infrared all-sky survey.',
+      'Browser-native blink comparator, image arithmetic and multi-visit spectroscopy for the NASA SPHEREx near-infrared all-sky survey.',
   },
 
   nav: {
@@ -86,7 +86,7 @@ const en = {
     heroTitle: 'Watch the infrared sky',
     heroTitleAccent: 'change over time',
     heroSubtitle:
-      'Enter a patch of sky and blink through multi-epoch SPHEREx images like a little video. Add epochs together, subtract them to expose moving objects, and pull a 102-band spectrum for anything you click — all from the real archive frames.',
+      'Enter a patch of sky and blink through multi-epoch SPHEREx images like a little video. Add epochs together, subtract them to expose moving objects, and build a real spectrum from every visit that covers the source — all from the real archive frames.',
     heroPrimaryCta: 'Search Sky Data',
     heroSecondaryCta: 'How it works',
 
@@ -126,16 +126,16 @@ const en = {
     capDiffTitle: 'Difference',
     capDiffBody: 'Subtract epochs and movers become cyan/rose dipoles.',
     capSpectrumTitle: 'Spectrum',
-    capSpectrumBody: 'Click a source for 102 bands with molecular markers.',
+    capSpectrumBody: 'Click a source to measure it in every visit that covers it.',
     customFieldTitle: 'Anywhere else on the sky',
     customFieldBody:
-      'Enter decimal degrees or sexagesimal coordinates. The same blink, co-add, difference and 102-band tools apply to any field.',
+      'Enter decimal degrees or sexagesimal coordinates. The same blink, co-add, difference and spectroscopy tools apply to any field.',
     customFieldAction: 'Enter coordinates',
 
     spectralKicker: 'SPECTROSCOPY',
-    spectralTitle: '102 bands in a single click',
+    spectralTitle: 'A spectrum from many visits',
     spectralBody:
-      'Every SPHEREx pixel carries a low-resolution near-infrared spectrum. Clicking a source extracts aperture photometry in all 102 bands and overlays the molecular features that drive brown-dwarf, disk and AGB classification.',
+      'A Level-2 frame measures each sky position in one spectral channel; the survey revisits every position in all 102 channels. Clicking a source measures it in each visit and plots flux against wavelength, with the molecular features that drive brown-dwarf, disk and AGB classification.',
     spectralLines: [
       'H₂O 1.13 µm',
       'H₂O 1.40 µm',
@@ -156,8 +156,8 @@ const en = {
       'Type RA/Dec (or open one of the NASA targets from Documentation).',
       'Search the sky and let the image worker align the epochs.',
       'Blink, co-add or subtract epochs to isolate motion.',
-      'Switch between the 6 detector arrays and the 102 individual bands.',
-      'Click a source to plot its spectrum and read the contamination flags.',
+      'Switch between the six detector arrays and the 17 official channels inside each.',
+      'Click a source to build its multi-visit spectrum and read the contamination flags.',
     ],
 
     statsScientific: 'Near-infrared bands',
@@ -242,7 +242,7 @@ const en = {
       'Inspect MJD timestamps and the per-pixel bitmask: cosmic ray, saturation, diffraction spike, persistence, hot pixel.',
     spectrumTitle: 'On-the-fly spectrum',
     spectrumBody:
-      'Click any object in the viewport to extract and plot its 102-band near-infrared spectrum with molecular markers.',
+      'Click any object in the viewport to measure it across every visit that covers it and plot flux against wavelength with molecular markers.',
     spectrumExtracting: 'Scanning every visit that covers this position (first build takes 1–3 minutes, then it is cached)',
     spectrumSelected: 'Selected channel',
     spectrumNoSignal: 'no signal in this channel',
@@ -301,11 +301,13 @@ const en = {
       'The local archive service is offline. Start it with start-local.cmd or uvicorn main:app --port 8787.',
     noCoverage:
       'No SPHEREx product covers this field. Choose another coordinate or press Random point.',
+    archiveUnreachable:
+      'The archive did not answer (IRSA timeout or 502). This is an upstream outage, not an empty field — retry in a minute.',
     noDetectorData: 'This field has no product for the selected detector in any epoch.',
     aligningArrays: 'Aligning detector arrays',
     flagsToggle: 'Contamination',
     contaminationOverlay: 'Contamination bitmask overlay',
-    clickToProfile: 'Click any source to profile its 102-band spectrum',
+    clickToProfile: 'Click a source to build its multi-visit spectrum',
     pixelValue: 'Surface brightness',
     flagsShort: 'flags',
     stepBack: 'Previous epoch',
@@ -698,7 +700,7 @@ const uk: Dictionary = {
     heroTitle: 'Спостерігайте, як інфрачервоне небо',
     heroTitleAccent: 'змінюється в часі',
     heroSubtitle:
-      'Введіть ділянку неба та переглядайте зображення SPHEREx за кілька епох як коротке відео. Додавайте епохи, віднімайте їх, щоб побачити рухомі об’єкти, і отримуйте 102-канальний спектр будь-якого об’єкта — усе з реальних архівних кадрів.',
+      'Введіть ділянку неба та переглядайте зображення SPHEREx за кілька епох як коротке відео. Додавайте епохи, віднімайте їх, щоб побачити рухомі об’єкти, і будуйте справжній спектр із кожного візиту, що покриває джерело — усе з реальних архівних кадрів.',
     heroPrimaryCta: 'Шукати дані неба',
     heroSecondaryCta: 'Як це працює',
 
@@ -738,16 +740,16 @@ const uk: Dictionary = {
     capDiffTitle: 'Різниця',
     capDiffBody: 'Віднімання епох перетворює рухомі об’єкти на диполі.',
     capSpectrumTitle: 'Спектр',
-    capSpectrumBody: 'Клацніть джерело — 102 канали з молекулярними маркерами.',
+    capSpectrumBody: 'Клацніть джерело, щоб виміряти його в кожному візиті, що його покриває.',
     customFieldTitle: 'Будь-де на небі',
     customFieldBody:
-      'Введіть координати в десяткових градусах або годинах-хвилинах-секундах. Ті самі інструменти миготіння, додавання, різниці та 102 каналів працюють для будь-якого поля.',
+      'Введіть координати в десяткових градусах або годинах-хвилинах-секундах. Ті самі інструменти миготіння, додавання, різниці та спектроскопії працюють для будь-якого поля.',
     customFieldAction: 'Ввести координати',
 
     spectralKicker: 'СПЕКТРОСКОПІЯ',
-    spectralTitle: '102 канали одним клацанням',
+    spectralTitle: 'Спектр із багатьох візитів',
     spectralBody:
-      'Кожен піксель SPHEREx містить спектр низької роздільної здатності. Клацання джерела вимірює апертурну фотометрію в усіх 102 каналах і накладає молекулярні смуги, за якими класифікують коричневі карлики, диски та AGB-зорі.',
+      'Кадр рівня 2 вимірює кожну позицію неба в одному спектральному каналі; огляд повторно відвідує кожну позицію в усіх 102 каналах. Клацання джерела вимірює його в кожному візиті й будує потік проти довжини хвилі з молекулярними смугами, за якими класифікують коричневі карлики, диски та AGB-зорі.',
     spectralLines: [
       'H₂O 1,13 мкм',
       'H₂O 1,40 мкм',
@@ -768,8 +770,8 @@ const uk: Dictionary = {
       'Введіть RA/Dec (або відкрийте тестовий об’єкт NASA зі сторінки документації).',
       'Натисніть «Шукати дані неба» і дозвольте рушію вирівняти епохи.',
       'Миготіть, додавайте або віднімайте епохи, щоб виділити рух.',
-      'Перемикайтеся між 6 матрицями детекторів і 102 окремими каналами.',
-      'Клацніть джерело, щоб побудувати спектр і прочитати прапорці забруднення.',
+      'Перемикайтеся між шістьма матрицями детекторів і 17 офіційними каналами в кожній.',
+      'Клацніть джерело, щоб побудувати мультивізитний спектр і прочитати прапорці забруднення.',
     ],
 
     statsScientific: 'Інфрачервоні канали',
@@ -853,7 +855,7 @@ const uk: Dictionary = {
       'Переглядайте мітки часу MJD та бітову маску пікселя: космічний промінь, насичення, дифракційний сплеск, інерція, гарячий піксель.',
     spectrumTitle: 'Спектр на льоту',
     spectrumBody:
-      'Клацніть будь-який об’єкт у вікні, щоб отримати 102-канальний інфрачервоний спектр із молекулярними маркерами.',
+      'Клацніть будь-який об’єкт у вікні, щоб виміряти його в кожному візиті, що його покриває, і побудувати потік проти довжини хвилі з молекулярними маркерами.',
     spectrumExtracting: 'Скануємо всі візити, що покривають цю позицію (перша побудова — 1–3 хвилини, далі з кешу)',
     spectrumSelected: 'Вибраний канал',
     spectrumNoSignal: 'у цьому каналі немає сигналу',
@@ -912,11 +914,13 @@ const uk: Dictionary = {
       'Локальний архівний сервіс недоступний. Запустіть start-local.cmd або uvicorn main:app --port 8787.',
     noCoverage:
       'Жоден продукт SPHEREx не покриває це поле. Виберіть інші координати або натисніть «Випадкова точка».',
+    archiveUnreachable:
+      'Архів не відповів (таймаут IRSA або 502). Це збій на боці архіву, а не порожнє поле — повторіть за хвилину.',
     noDetectorData: 'Для цього поля немає продукту вибраної матриці в жодній епосі.',
     aligningArrays: 'Вирівнювання матриць детекторів',
     flagsToggle: 'Забруднення',
     contaminationOverlay: 'Накладання маски забруднення',
-    clickToProfile: 'Клацніть джерело, щоб отримати його 102-канальний спектр',
+    clickToProfile: 'Клацніть джерело, щоб побудувати мультивізитний спектр',
     pixelValue: 'Поверхнева яскравість',
     flagsShort: 'прапорці',
     stepBack: 'Попередня епоха',

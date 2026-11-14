@@ -210,7 +210,7 @@ export function useSkyEngine(options: {
         setCoverage(data);
         if (!data.covered) {
           setStatus(null);
-          setError('NO COVERAGE');
+          setError(data.archiveError ? 'ARCHIVE UNREACHABLE' : 'NO COVERAGE');
         }
       })
       .catch((cause: unknown) => {

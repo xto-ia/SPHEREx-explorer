@@ -21,6 +21,8 @@ export interface Coverage {
   dec: number;
   fov: number;
   covered: boolean;
+  /** True when every archive query failed: an outage, not an empty sky. */
+  archiveError?: boolean;
   collection: string | null;
   productCount: number;
   epochs: CoverageEpoch[];
