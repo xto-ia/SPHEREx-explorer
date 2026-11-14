@@ -160,6 +160,22 @@ def sample_product(
     # Official per-pixel channel index (0-18); 0 means "outside the nominal
     # 17-channel layout", exactly as the calibration product defines it.
     channel = channel_at_pixels(px, py, (naxis2, naxis1))
+    if channel is None and "wave" in meta:
+        # Fallback when the calibration map cannot be downloaded: bin the
+        # WAVE-TAB wavelength of every output pixel with the official edges.
+        try:
+            from .config import CHANNEL_EDGES_UM
+
+            lam_full, _bandwidth_full = wavelength_at(meta, px, py)
+            edges = np.asarray(CHANNEL_EDGES_UM, dtype=float)
+            global_index = np.digitize(lam_full, edges)
+            detector_index = int(meta.get("detector") or 0)
+            subchan = global_index - (detector_index - 1) * 17
+            channel = np.where(
+                (subchan >= 1) & (subchan <= 17) & inside, subchan, 0
+            ).astype(np.uint8)
+        except Exception:  # noqa: BLE001 - the map stays empty, not wrong
+            channel = None
     if channel is None:
         channel = np.zeros((shape, shape), dtype=np.uint8)
     else:

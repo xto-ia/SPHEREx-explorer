@@ -32,7 +32,7 @@ from typing import Any
 import numpy as np
 
 from .cache import cache
-from .channels import channel_at_pixels, channel_rows
+from .channels import channel_at_pixels, channel_for_wavelength, channel_rows
 from .channels_data import CHANNELS
 from .config import SIA_COLLECTIONS
 from .images import (
@@ -41,6 +41,7 @@ from .images import (
     read_flags_window,
     read_variance_window,
     read_window,
+    wavelength_at,
     wcs_for,
 )
 from .sia import (
@@ -237,8 +238,23 @@ def _photometry(
     channel_values = channel_at_pixels(
         np.array([centred_x]), np.array([centred_y]), (naxis2, naxis1)
     )
-    subchan = int(channel_values[0]) if channel_values is not None else 0
     detector = int(meta.get("detector") or 0)
+    if channel_values is not None:
+        subchan = int(channel_values[0])
+    else:
+        # Fallback: derive the channel from the WAVE-TAB wavelength when the
+        # official calibration map is unavailable.
+        subchan = 0
+        if "wave" in meta:
+            try:
+                lam, _bandwidth = wavelength_at(
+                    meta, np.array([centred_x]), np.array([centred_y])
+                )
+                global_index = channel_for_wavelength(float(lam[0]))
+                if global_index:
+                    subchan = global_index - (detector - 1) * 17
+            except Exception:  # noqa: BLE001 - no channel is better than a wrong one
+                subchan = 0
     channel = (detector - 1) * 17 + subchan if 1 <= subchan <= 17 else None
 
     return {
