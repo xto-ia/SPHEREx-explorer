@@ -40,7 +40,7 @@ export default function MissionBrief() {
 
       <section
         aria-labelledby="spectral-title"
-        className="mt-10 grid gap-px border border-line bg-line md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+        className="mt-10 grid gap-px border border-line bg-line md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]"
       >
         <div className="bg-canvas/90 p-5">
           <p className="kicker">{t.home.spectralKicker}</p>
@@ -48,6 +48,9 @@ export default function MissionBrief() {
             {t.home.spectralTitle}
           </h2>
           <p className="mt-2 text-[12px] leading-relaxed text-zinc-500">{t.home.spectralBody}</p>
+        </div>
+        <div className="bg-canvas/90 p-5">
+          <p className="label-mono">{t.home.spectralLinesTitle}</p>
           <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[10px] text-zinc-500">
             {t.home.spectralLines.map((line) => (
               <li key={line} className="flex items-center gap-1.5">
@@ -56,25 +59,6 @@ export default function MissionBrief() {
               </li>
             ))}
           </ul>
-        </div>
-        <div className="bg-canvas/90 p-5">
-          <div className="flex h-full flex-col justify-between gap-4">
-            <div>
-              <p className="kicker">{t.home.workflowKicker}</p>
-              <h3 className="mt-2 text-base">{t.home.workflowTitle}</h3>
-              <p className="mt-2 text-[12px] leading-relaxed text-zinc-500">{t.home.workflowBody}</p>
-            </div>
-            <ol className="space-y-1.5">
-              {t.home.workflowSteps.map((step, index) => (
-                <li key={step} className="flex items-start gap-2 font-mono text-[10px] leading-relaxed text-zinc-500">
-                  <span className="grid h-4 w-4 shrink-0 place-items-center border border-line text-[8px] text-accent">
-                    {index + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-          </div>
         </div>
       </section>
     </>

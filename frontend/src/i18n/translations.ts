@@ -109,28 +109,8 @@ const en = {
     viewerLoading: 'Loading spacecraft mesh…',
     viewerFallback: 'WebGL model unavailable — showing schematic',
 
-    fovGuideTitle: 'Field of view guide',
-    fovGuideBody:
-      'Field of view sets how much sky each frame covers. The backend always reprojects onto a 480 × 480 grid, so small fields zoom into the target while large fields catch fast movers.',
-    fovGuide: [
-      { label: '0.1°', body: '3.6′ across — resolved binaries and parallax wobble.' },
-      { label: '0.25°', body: '15′ — Epsilon Indi B’s 0.7″ pair and nearby fast stars.' },
-      { label: '0.5°', body: '30′ — survey cutout: proper motion plus asteroid tracks.' },
-      { label: '1–5°', body: 'Wide sweeps for fast NEOs and comets crossing the field.' },
-    ],
-    epochsBadge: '6 epochs · 18 months',
-    capBlinkTitle: 'Blink',
-    capBlinkBody: 'Epochs as a video — motion jumps out frame by frame.',
-    capCoaddTitle: 'Co-add',
-    capCoaddBody: 'Sum or average epochs to sharpen stationary sources.',
-    capDiffTitle: 'Difference',
-    capDiffBody: 'Subtract epochs and movers become cyan/rose dipoles.',
-    capSpectrumTitle: 'Spectrum',
-    capSpectrumBody: 'Click a source to measure it in every visit that covers it.',
-    customFieldTitle: 'Anywhere else on the sky',
-    customFieldBody:
-      'Enter decimal degrees or sexagesimal coordinates. The same blink, co-add, difference and spectroscopy tools apply to any field.',
-    customFieldAction: 'Enter coordinates',
+    intakeDocHint: 'Coordinate formats, field-of-view sizes and the workflow live in the documentation.',
+    intakeDocLink: 'Read the guide',
 
     spectralKicker: 'SPECTROSCOPY',
     spectralTitle: 'A spectrum from many visits',
@@ -148,17 +128,7 @@ const en = {
       'CO₂ 4.26 µm',
       'CO 4.60 µm',
     ],
-    workflowKicker: 'WORKFLOW',
-    workflowTitle: 'From coordinates to a spectrum',
-    workflowBody:
-      'The same four actions volunteers use on WISEView, now with SPHEREx’s spectral depth behind them.',
-    workflowSteps: [
-      'Type RA/Dec (or open one of the NASA targets from Documentation).',
-      'Search the sky and let the image worker align the epochs.',
-      'Blink, co-add or subtract epochs to isolate motion.',
-      'Switch between the six detector arrays and the 17 official channels inside each.',
-      'Click a source to build its multi-visit spectrum and read the contamination flags.',
-    ],
+    spectralLinesTitle: 'Diagnostic bands',
 
     statsScientific: 'Near-infrared bands',
     statsCadence: 'All-sky survey cadence',
@@ -474,16 +444,61 @@ const en = {
       'Everything the explorer does, where the data comes from, and how to embed it in your own pages.',
     onThisPage: 'On this page',
     sectionCapabilities: 'Capabilities & scientific tools',
+    sectionIntake: 'Coordinates, field of view & workflow',
     sectionModes: 'Two workspace modes',
     sectionSources: 'Data sources & archive pipelines',
     sectionPipeline: 'Pipeline & provenance',
-    sectionWalkthrough: 'User guide & test targets',
+    sectionWalkthrough: 'Test targets & what to look for',
     sectionEmbed: 'URL & iframe embed API',
     sectionShortcuts: 'Keyboard shortcuts',
     sectionLimitations: 'Limitations & roadmap',
 
     capabilitiesBody:
       'Six instruments in one workspace, all executed in the browser on Float32Array buffers.',
+
+    intakeBody:
+      'The Explorer asks for one pointing: right ascension, declination and a field of view. Those three values travel into the workspace URL, so any view can be bookmarked, shared or embedded later.',
+    intakeCoordinatesTitle: 'Right ascension & declination',
+    intakeCoordinatesPoints: [
+      'RA accepts decimal degrees (0–360) or sexagesimal hours: 17h57m48.5s, 17:57:48.5 and 17 57 48.5 all parse the same way.',
+      'Dec accepts decimal degrees (−90 to +90) or sexagesimal degrees: +04d41m36s, +04:41:36, +04 41 36 and +04°41′36″ are equivalent.',
+      'A bare number is read as decimal degrees; unit letters, colons, spaces and °/′/″ separators are optional, and RA wraps into 0–360.',
+      'Minutes and seconds must stay below 60, and Dec outside ±90 is rejected: the field is marked invalid and no search runs.',
+      'The Coordinates readout echoes the parsed pointing as decimal degrees plus sexagesimal, so the sign can be checked before searching.',
+      'The last field you searched is stored in this browser and restored on your next visit.',
+    ],
+    intakeExamplesTitle: 'Accepted formats',
+    intakeExamples: [
+      { label: 'RA · decimal', value: '269.452075' },
+      { label: 'RA · sexagesimal', value: '17h57m48.5s' },
+      { label: 'Dec · decimal', value: '+4.693364' },
+      { label: 'Dec · sexagesimal', value: '+04°41′36.1″' },
+    ],
+    intakeFovTitle: 'Field of view',
+    intakeFovBody:
+      'FoV sets how much sky one frame covers. The backend always resamples onto a 480 × 480 display grid, so a small field magnifies the target while a wide field catches fast movers — at the cost of coarser sampling and a larger cutout to transfer.',
+    intakeFovGuide: [
+      { label: '0.1°', body: '6′ across — resolved binaries and parallax wobble.' },
+      { label: '0.25°', body: '15′ — Epsilon Indi B’s 0.7″ pair and nearby fast stars.' },
+      { label: '0.5°', body: '30′ — survey cutout: proper motion plus asteroid tracks.' },
+      { label: '1–2°', body: 'Wider sweeps: more sky per frame, coarser sampling of each source.' },
+      { label: '5°', body: 'NEOs and comets crossing the field within a single visit.' },
+    ],
+    intakeFovNote:
+      'At 0.5° only about 2.5 of the 17 channels of a detector fall inside the cutout; the Channels tab flags this and offers a one-click widen to 3.6°.',
+    intakeRandomTitle: 'Random point',
+    intakeRandomBody:
+      'Random point asks the backend for a coordinate that a SPHEREx product actually covers before filling the form, so it never offers an empty field. If the archive check fails, the current pointing is kept and a warning explains why.',
+    intakeWorkflowTitle: 'From coordinates to a spectrum',
+    intakeWorkflowBody:
+      'Five steps cover the whole workspace. Simple and Advanced mode share the same real epochs and the same worker math; Advanced only adds instrument-level controls.',
+    intakeWorkflowSteps: [
+      'Enter RA/Dec, or open one of the NASA test targets, and pick a field of view.',
+      'Press Search Sky Data — RA, Dec and FoV travel into the URL while the backend discovers the products.',
+      'Blink the epochs, then switch to Co-Add or Difference to isolate motion.',
+      'Pick a detector array, then a channel inside it: the viewport keeps only the pixels the mission assigns to that channel.',
+      'Click a source to build its multi-visit spectrum; the pixel probe shows wavelength, σ, channel and the FLAGS bitmask.',
+    ],
 
     modesBody:
       'The workspace has two surfaces over the same real data. Simple mode hides controls, not information: every pixel it shows is a real calibrated SPHEREx plane, and its spectrum is the same multi-visit measurement as in advanced mode.',
@@ -630,14 +645,7 @@ const en = {
       'Update path: add the new SIA2 collection to SIA_COLLECTIONS in backend/app/config.py, point the FITS reader at the matching AWS Open Data prefix, and the UI inherits the new epochs.',
 
     walkthroughBody:
-      'Five targets were chosen by NASA to exercise motion, binarity, variability and spectral depth. Load any of them from the Explorer page.',
-    walkthroughSteps: [
-      'Enter coordinates or pick a test target on the Explorer page.',
-      'Press Search Sky Data — RA, Dec and FoV travel into the URL.',
-      'Blink the epochs, then switch to Co-Add or Difference to isolate motion.',
-      'Pick a detector array, then a channel inside it: the viewport keeps only the pixels the mission assigns to that channel.',
-      'Click a source to build its multi-visit spectrum; the pixel probe shows wavelength, sigma and the FLAGS bitmask.',
-    ],
+      'These five sources were chosen by NASA to exercise motion, binarity, variability and spectral depth. Each card opens the workspace on the target with its recommended field of view.',
 
     embedBody:
       'The workspace is fully addressable. Pass coordinates and view state as query parameters to restore or embed an exact view.',
@@ -828,35 +836,15 @@ const uk: Dictionary = {
     invalidRa: 'Введіть RA у десяткових градусах (0–360) або у форматі 17h57m48.5s.',
     invalidDec: 'Введіть Dec у десяткових градусах (−90…+90) або у форматі +04d41m36s.',
     randomUnverified:
-      'Перевірка архіву недоступна — ця випадкова точка може бути поза покриттям SPHEREx.',
+      'Перевірка архіву не вдалася, тож випадкову точку не змінено.',
 
     viewerRig: 'Налаштування рига',
     viewerCopy: 'Копіювати константи',
     viewerLoading: 'Завантаження моделі апарата…',
     viewerFallback: 'WebGL-модель недоступна — показано схему',
 
-    fovGuideTitle: 'Путівник полем зору',
-    fovGuideBody:
-      'Поле зору визначає, яку ділянку неба охоплює кадр. Бекенд завжди перепроєктує на сітку 480 × 480, тож малі поля наближають об’єкт, а великі ловлять швидкі рухомі джерела.',
-    fovGuide: [
-      { label: '0.1°', body: '3,6′ — розділені подвійні та паралаксне хитання.' },
-      { label: '0.25°', body: '15′ — пара Epsilon Indi B з розділенням 0,7″ і швидкі зорі.' },
-      { label: '0.5°', body: '30′ — типовий кадр огляду: власний рух і треки астероїдів.' },
-      { label: '1–5°', body: 'Широкі смуги для швидких NEO та комет, що перетинають поле.' },
-    ],
-    epochsBadge: '6 епох · 18 місяців',
-    capBlinkTitle: 'Миготіння',
-    capBlinkBody: 'Епохи як відео — рух видно кадр за кадром.',
-    capCoaddTitle: 'Додавання',
-    capCoaddBody: 'Сума або середнє епох підсилює нерухомі джерела.',
-    capDiffTitle: 'Різниця',
-    capDiffBody: 'Віднімання епох перетворює рухомі об’єкти на диполі.',
-    capSpectrumTitle: 'Спектр',
-    capSpectrumBody: 'Клацніть джерело, щоб виміряти його в кожному візиті, що його покриває.',
-    customFieldTitle: 'Будь-де на небі',
-    customFieldBody:
-      'Введіть координати в десяткових градусах або годинах-хвилинах-секундах. Ті самі інструменти миготіння, додавання, різниці та спектроскопії працюють для будь-якого поля.',
-    customFieldAction: 'Ввести координати',
+    intakeDocHint: 'Формати координат, розміри поля зору та робочий процес — у документації.',
+    intakeDocLink: 'Читати посібник',
 
     spectralKicker: 'СПЕКТРОСКОПІЯ',
     spectralTitle: 'Спектр із багатьох візитів',
@@ -874,17 +862,7 @@ const uk: Dictionary = {
       'CO₂ 4,26 мкм',
       'CO 4,60 мкм',
     ],
-    workflowKicker: 'РОБОЧИЙ ПРОЦЕС',
-    workflowTitle: 'Від координат до спектра',
-    workflowBody:
-      'Ті самі чотири дії, які волонтери виконують у WISEView, але тепер із спектральною глибиною SPHEREx.',
-    workflowSteps: [
-      'Введіть RA/Dec (або відкрийте тестовий об’єкт NASA зі сторінки документації).',
-      'Натисніть «Шукати дані неба» і дозвольте рушію вирівняти епохи.',
-      'Миготіть, додавайте або віднімайте епохи, щоб виділити рух.',
-      'Перемикайтеся між шістьма матрицями детекторів і 17 офіційними каналами в кожній.',
-      'Клацніть джерело, щоб побудувати мультивізитний спектр і прочитати прапорці забруднення.',
-    ],
+    spectralLinesTitle: 'Діагностичні смуги',
 
     statsScientific: 'Інфрачервоні канали',
     statsCadence: 'Цикл огляду всього неба',
@@ -1199,16 +1177,61 @@ const uk: Dictionary = {
       'Усе, що вміє огляд, звідки беруться дані та як вставити його на власні сторінки.',
     onThisPage: 'На цій сторінці',
     sectionCapabilities: 'Можливості та наукові інструменти',
+    sectionIntake: 'Координати, поле зору та робочий процес',
     sectionModes: 'Два режими робочого поля',
     sectionSources: 'Джерела даних і архівні конвеєри',
     sectionPipeline: 'Конвеєр і походження даних',
-    sectionWalkthrough: 'Посібник користувача та тестові об’єкти',
+    sectionWalkthrough: 'Тестові об’єкти та на що дивитися',
     sectionEmbed: 'API URL та вбудовування через iframe',
     sectionShortcuts: 'Клавіатурні скорочення',
     sectionLimitations: 'Обмеження та план розвитку',
 
     capabilitiesBody:
       'Шість інструментів в одному робочому полі — усі виконуються в браузері на буферах Float32Array.',
+
+    intakeBody:
+      'Сторінка огляду запитує одне наведення: пряме піднесення, схилення та поле зору. Ці три значення потрапляють в URL робочого поля, тож будь-який вигляд можна зберегти в закладках, надіслати або вбудувати.',
+    intakeCoordinatesTitle: 'Пряме піднесення та схилення',
+    intakeCoordinatesPoints: [
+      'RA приймає десяткові градуси (0–360) або години-хвилини-секунди: 17h57m48.5s, 17:57:48.5 і 17 57 48.5 читаються однаково.',
+      'Dec приймає десяткові градуси (−90…+90) або градуси-хвилини-секунди: +04d41m36s, +04:41:36, +04 41 36 і +04°41′36″ рівноцінні.',
+      'Саме число завжди читається як десяткові градуси; літери одиниць, двокрапки, пробіли та символи °/′/″ необов’язкові, а RA загортається в 0–360.',
+      'Хвилини й секунди мають бути менші за 60, а Dec поза ±90 відхиляється: поле позначається як некоректне, і пошук не запускається.',
+      'Блок «Координати» показує розібране наведення в десяткових градусах і в годинах-хвилинах-секундах, тож знак можна перевірити до пошуку.',
+      'Останнє поле, яке ви шукали, зберігається в цьому браузері й відновлюється під час наступного візиту.',
+    ],
+    intakeExamplesTitle: 'Прийняті формати',
+    intakeExamples: [
+      { label: 'RA · десяткові', value: '269.452075' },
+      { label: 'RA · години', value: '17h57m48.5s' },
+      { label: 'Dec · десяткові', value: '+4.693364' },
+      { label: 'Dec · градуси', value: '+04°41′36.1″' },
+    ],
+    intakeFovTitle: 'Поле зору',
+    intakeFovBody:
+      'Поле зору визначає, яку ділянку неба охоплює один кадр. Бекенд завжди перепроєктує на сітку 480 × 480, тож мале поле наближає об’єкт, а широке ловить швидкі рухомі джерела — ціною грубшої дискретизації та більшого вирізу для передачі.',
+    intakeFovGuide: [
+      { label: '0.1°', body: '6′ — розділені подвійні та паралаксне хитання.' },
+      { label: '0.25°', body: '15′ — пара Epsilon Indi B з розділенням 0,7″ і швидкі зорі.' },
+      { label: '0.5°', body: '30′ — типовий кадр огляду: власний рух і треки астероїдів.' },
+      { label: '1–2°', body: 'Ширші смуги: більше неба в кадрі, грубша дискретизація кожного джерела.' },
+      { label: '5°', body: 'NEO та комети, що перетинають поле протягом одного візиту.' },
+    ],
+    intakeFovNote:
+      'При 0.5° у кадр потрапляє лише близько 2,5 з 17 каналів детектора; вкладка «Канали» позначає це й пропонує розширити поле до 3.6° одним натисканням.',
+    intakeRandomTitle: 'Випадкова точка',
+    intakeRandomBody:
+      '«Випадкова точка» питає бекенд про координату, яку реально покриває продукт SPHEREx, і лише тоді заповнює форму, тож порожнє поле не пропонується. Якщо перевірка архіву не вдалася, поточне наведення лишається, а попередження пояснює причину.',
+    intakeWorkflowTitle: 'Від координат до спектра',
+    intakeWorkflowBody:
+      'П’ять кроків охоплюють усе робоче поле. Простий і розширений режими використовують ті самі реальні епохи й ту саму математику; розширений додає лише приладові елементи керування.',
+    intakeWorkflowSteps: [
+      'Введіть RA/Dec або відкрийте тестовий об’єкт NASA і виберіть поле зору.',
+      'Натисніть «Шукати дані неба» — RA, Dec і FoV потрапляють в URL, а бекенд знаходить продукти.',
+      'Перегляньте епохи в режимі миготіння, потім перемкніть на додавання або різницю, щоб виділити рух.',
+      'Виберіть матрицю детектора, а потім канал у ній: вікно лишить тільки ті пікселі, які місія віднесла до цього каналу.',
+      'Клацніть джерело, щоб побудувати мультивізитний спектр; проба пікселя показує довжину хвилі, σ, канал і бітмаску FLAGS.',
+    ],
 
     modesBody:
       'Робоче поле має дві поверхні над тими самими реальними даними. Простий режим ховає елементи керування, а не інформацію: кожен піксель, який він показує, — це реальна калібрована площина SPHEREx, а його спектр — те саме мультивізитне вимірювання, що й у розширеному режимі.',
@@ -1355,14 +1378,7 @@ const uk: Dictionary = {
       'Шлях оновлення: додайте нову колекцію SIA2 у SIA_COLLECTIONS у backend/app/config.py, спрямуйте FITS-читач на відповідний префікс AWS Open Data — і інтерфейс отримає нові епохи.',
 
     walkthroughBody:
-      'NASA обрала п’ять об’єктів, щоб перевірити рух, подвійність, змінність і спектральну глибину. Завантажте будь-який із них на сторінці огляду.',
-    walkthroughSteps: [
-      'Введіть координати або виберіть тестовий об’єкт на сторінці огляду.',
-      'Натисніть «Шукати дані неба» — RA, Dec і FoV потраплять в URL.',
-      'Перегляньте епохи в режимі миготіння, потім перемкніть на додавання або різницю.',
-      'Виберіть матрицю, а потім канал у ній: вікно лишить тільки ті пікселі, які місія віднесла до цього каналу.',
-      'Клацніть джерело, щоб побудувати мультивізитний спектр; проба пікселя показує довжину хвилі, σ і бітмаску FLAGS.',
-    ],
+      'Ці п’ять джерел NASA обрала, щоб перевірити рух, подвійність, змінність і спектральну глибину. Кожна картка відкриває робоче поле на об’єкті з рекомендованим полем зору.',
 
     embedBody:
       'Робоче поле повністю адресується. Передавайте координати й стан перегляду як параметри запиту, щоб відтворити або вставити точний вигляд.',

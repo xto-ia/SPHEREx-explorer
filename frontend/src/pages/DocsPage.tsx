@@ -14,11 +14,31 @@ const SOURCE_LINKS = [
   { label: 'CADC CAOM2', href: 'https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/' },
 ];
 
+/** Numbered procedure list shared by the intake workflow and the data pipeline. */
+function StepList({ steps }: { steps: readonly string[] }) {
+  return (
+    <ol className="mt-4 space-y-2">
+      {steps.map((step, index) => (
+        <li
+          key={step}
+          className="flex items-start gap-3 border border-line bg-canvas/90 p-3 font-mono text-[11px] leading-relaxed text-zinc-400"
+        >
+          <span className="grid h-5 w-5 shrink-0 place-items-center border border-line text-[9px] text-accent">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          {step}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export default function DocsPage() {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   const sections = [
+    { id: 'intake', label: t.docs.sectionIntake },
     { id: 'capabilities', label: t.docs.sectionCapabilities },
     { id: 'modes', label: t.docs.sectionModes },
     { id: 'sources', label: t.docs.sectionSources },
@@ -72,6 +92,86 @@ export default function DocsPage() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-12">
+          {/* Coordinates, field of view & workflow */}
+          <section id="intake" aria-labelledby="intake-title" className="scroll-mt-20">
+            <h2 id="intake-title" className="text-lg sm:text-xl">
+              {t.docs.sectionIntake}
+            </h2>
+            <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-zinc-500">
+              {t.docs.intakeBody}
+            </p>
+
+            <div className="mt-4 grid gap-px border border-line bg-line lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+              <article className="bg-canvas/90 p-4">
+                <h3 className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-100">
+                  {t.docs.intakeCoordinatesTitle}
+                </h3>
+                <ul className="mt-3 space-y-1.5">
+                  {t.docs.intakeCoordinatesPoints.map((point) => (
+                    <li key={point} className="flex gap-2 text-[12px] leading-relaxed text-zinc-500">
+                      <span aria-hidden="true" className="mt-[3px] h-1 w-1 shrink-0 rounded-full bg-accent/70" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-3 border border-line bg-black/25">
+                  <p className="border-b border-line px-3 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-zinc-500">
+                    {t.docs.intakeExamplesTitle}
+                  </p>
+                  <ul className="divide-y divide-line">
+                    {t.docs.intakeExamples.map((example) => (
+                      <li
+                        key={example.label}
+                        className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 py-2"
+                      >
+                        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-600">
+                          {example.label}
+                        </span>
+                        <code className="font-mono text-[11px] text-zinc-300">{example.value}</code>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+
+              <article className="bg-canvas/90 p-4">
+                <h3 className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-100">
+                  {t.docs.intakeFovTitle}
+                </h3>
+                <p className="mt-1 text-[12px] leading-relaxed text-zinc-500">{t.docs.intakeFovBody}</p>
+
+                <ul className="mt-3 divide-y divide-line border border-line">
+                  {t.docs.intakeFovGuide.map((item) => (
+                    <li key={item.label} className="flex gap-3 px-3 py-2">
+                      <span className="w-14 shrink-0 font-mono text-[10px] text-accent/90">{item.label}</span>
+                      <span className="text-[11px] leading-relaxed text-zinc-500">{item.body}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="mt-3 font-mono text-[10px] leading-relaxed text-zinc-600">
+                  {t.docs.intakeFovNote}
+                </p>
+              </article>
+            </div>
+
+            <p className="mt-3 border border-line bg-canvas/90 p-3 text-[12px] leading-relaxed text-zinc-500">
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-accent/90">
+                {t.docs.intakeRandomTitle} ·{' '}
+              </span>
+              {t.docs.intakeRandomBody}
+            </p>
+
+            <h3 className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400">
+              {t.docs.intakeWorkflowTitle}
+            </h3>
+            <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-zinc-500">
+              {t.docs.intakeWorkflowBody}
+            </p>
+            <StepList steps={t.docs.intakeWorkflowSteps} />
+          </section>
+
           {/* Capabilities */}
           <section id="capabilities" aria-labelledby="capabilities-title" className="scroll-mt-20">
             <h2 id="capabilities-title" className="text-lg sm:text-xl">
@@ -233,19 +333,7 @@ export default function DocsPage() {
               {t.docs.pipelineBody}
             </p>
 
-            <ol className="mt-4 space-y-2">
-              {t.docs.pipelineSteps.map((step, index) => (
-                <li
-                  key={step}
-                  className="flex items-start gap-3 border border-line bg-canvas/90 p-3 font-mono text-[11px] leading-relaxed text-zinc-400"
-                >
-                  <span className="grid h-5 w-5 shrink-0 place-items-center border border-line text-[9px] text-accent">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ol>
+            <StepList steps={t.docs.pipelineSteps} />
 
             <div className="mt-3 grid gap-px border border-line bg-line sm:grid-cols-2">
               <p className="bg-canvas/90 p-3 font-mono text-[10px] leading-relaxed text-zinc-500">
@@ -265,20 +353,6 @@ export default function DocsPage() {
             <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-zinc-500">
               {t.docs.walkthroughBody}
             </p>
-
-            <ol className="mt-4 space-y-2">
-              {t.docs.walkthroughSteps.map((step, index) => (
-                <li
-                  key={step}
-                  className="flex items-start gap-3 border border-line bg-canvas/90 p-3 font-mono text-[11px] leading-relaxed text-zinc-400"
-                >
-                  <span className="grid h-5 w-5 shrink-0 place-items-center border border-line text-[9px] text-accent">
-                    {index + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ol>
 
             <ul className="mt-4 grid gap-px border border-line bg-line sm:grid-cols-2 xl:grid-cols-3">
               {TEST_TARGETS.map((target) => {

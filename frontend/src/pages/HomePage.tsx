@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Boxes, Crosshair, Search } from 'lucide-react';
+import { ArrowRight, Boxes, Search } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { APP_CONFIG } from '../config/app.config';
 import CoordinateForm from '../components/home/CoordinateForm';
@@ -52,7 +52,7 @@ export default function HomePage() {
               <Boxes size={13} aria-hidden="true" />
               {t.common.openWorkspace}
             </Link>
-            <Link to="/docs" className="link-mono ml-1">
+            <Link to="/docs#intake" className="link-mono ml-1">
               {t.home.heroSecondaryCta} →
             </Link>
           </div>
@@ -64,8 +64,8 @@ export default function HomePage() {
         <SpherexModelCanvas className="lg:aspect-auto lg:h-[calc(100dvh_-_7rem)] lg:max-h-[52rem]" />
       </section>
 
-      {/* ------------------------------------------- Mission stats & capability band */}
-      <section className="mt-10 space-y-3">
+      {/* ------------------------------------------- Mission stats band */}
+      <section className="mt-10">
         <dl className="grid grid-cols-2 border border-line bg-black/25 sm:grid-cols-4">
           {[
             { value: '102', label: t.home.statsScientific },
@@ -90,44 +90,23 @@ export default function HomePage() {
             </div>
           ))}
         </dl>
-
-        <ul className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { title: t.home.capBlinkTitle, body: t.home.capBlinkBody },
-            { title: t.home.capCoaddTitle, body: t.home.capCoaddBody },
-            { title: t.home.capDiffTitle, body: t.home.capDiffBody },
-            { title: t.home.capSpectrumTitle, body: t.home.capSpectrumBody },
-          ].map((item) => (
-            <li key={item.title} className="bg-canvas/80 px-3 py-2">
-              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-accent/90">{item.title}</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">{item.body}</p>
-            </li>
-          ))}
-        </ul>
       </section>
 
       {/* ------------------------------------------------------- Coordinate form */}
-      <section className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <CoordinateForm />
+      <section className="mt-14">
+        <div className="mx-auto w-full max-w-5xl">
+          <CoordinateForm />
 
-        <div className="panel h-fit">
-          <div className="panel-header">
-            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-200">
-              {t.home.fovGuideTitle}
-            </span>
-            <Crosshair size={13} className="text-zinc-600" aria-hidden="true" />
-          </div>
-          <div className="space-y-3 p-4">
-            <p className="text-[12px] leading-relaxed text-zinc-500">{t.home.fovGuideBody}</p>
-            <ul className="divide-y divide-line border border-line">
-              {t.home.fovGuide.map((item) => (
-                <li key={item.label} className="flex gap-3 px-3 py-2">
-                  <span className="w-14 shrink-0 font-mono text-[10px] text-accent/90">{item.label}</span>
-                  <span className="text-[11px] leading-relaxed text-zinc-500">{item.body}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* The how-to material (formats, FoV sizes, workflow) lives in the docs. */}
+          <p className="mt-3 text-center font-mono text-[10px] leading-relaxed text-zinc-600">
+            {t.home.intakeDocHint}{' '}
+            <Link
+              to="/docs#intake"
+              className="text-accent underline-offset-4 transition-colors hover:text-accent-bright hover:underline"
+            >
+              {t.home.intakeDocLink} →
+            </Link>
+          </p>
         </div>
       </section>
 

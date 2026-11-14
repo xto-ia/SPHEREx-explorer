@@ -11,11 +11,19 @@ import NotFoundPage from './pages/NotFoundPage';
 
 /** Restores the top of the page on navigation, matching native page loads. */
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
 
   useEffect(() => {
+    // Deep links such as /docs#intake must land on their section, not the top.
+    if (hash) {
+      const target = document.getElementById(hash.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        return;
+      }
+    }
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [pathname]);
+  }, [pathname, hash]);
 
   return null;
 }
