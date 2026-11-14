@@ -33,8 +33,9 @@ export interface RenderConfig {
 export interface LayoutConfig {
   /**
    * Upward offset in pixels for the landing-page hero copy on screens ≥1024px.
-   * The copy column is centred in the first screen; raising it keeps the
-   * headline from sitting too low after a reload. 0 keeps it perfectly centred.
+   * The copy column is centred in the fixed first-screen stage; 28 ≈ half of the
+   * page's 3.5rem top padding, which places the text block in the middle of the
+   * area below the sticky header. 0 sits half that padding lower.
    */
   heroCopyRise: number;
 }
@@ -57,7 +58,7 @@ export const APP_CONFIG: AppConfig = {
     frameColor: '#ffffff',
   },
   layout: {
-    heroCopyRise: 130,
+    heroCopyRise: 28,
   },
   spacecraft: {
     initialTilt: { x: 0.65, y: -0.55, z: 0.15 },

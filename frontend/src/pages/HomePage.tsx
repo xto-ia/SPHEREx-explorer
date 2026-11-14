@@ -58,8 +58,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Borderless stage: the spacecraft floats directly on the page starfield. */}
-        <SpherexModelCanvas />
+        {/* Borderless stage: the spacecraft floats directly on the page starfield.
+            Its height is tied to the first screen so the copy column always
+            shares the same vertical centring reference. */}
+        <SpherexModelCanvas className="lg:aspect-auto lg:h-[calc(100dvh_-_7rem)] lg:max-h-[52rem]" />
       </section>
 
       {/* ------------------------------------------- Mission stats & capability band */}

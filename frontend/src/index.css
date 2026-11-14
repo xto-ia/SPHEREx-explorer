@@ -166,37 +166,35 @@
   }
 
   /*
-   * Landing hero stage: fills exactly the first screen below the sticky header
-   * (header 3.5rem + page padding 3.5rem = 7rem at `lg`), so the left column is
-   * centred in the visible area and the stats band below it always starts under
-   * the fold. `dvh` keeps the guarantee while mobile browser chrome collapses;
-   * the `vh` line is the fallback.
+   * Landing hero stage: exactly the first screen below the sticky header
+   * (header 3.5rem + page padding 3.5rem = 7rem at `lg`). A fixed height keeps
+   * the copy centred in the visible area no matter how the 3D stage scales;
+   * the stats band below it always starts under the fold. `dvh` keeps the
+   * guarantee while mobile browser chrome collapses; `vh` is the fallback.
    */
   .hero-fold {
-    min-height: calc(100vh - 7rem);
-    min-height: calc(100dvh - 7rem);
+    height: calc(100vh - 7rem);
+    height: calc(100dvh - 7rem);
+    min-height: 30rem;
   }
 
   /*
-   * The hero copy column is centred inside the visible area (below the header
-   * and inside the page padding), not just inside the section box, so the gap
-   * under the text matches the gap above it.
+   * Below `lg` the columns stack, so the copy column is centred inside a
+   * viewport-sized box. At `lg` the grid rows do the centring (the hero stage
+   * already has the right height), and the copy may be nudged up with
+   * APP_CONFIG.layout.heroCopyRise (px), injected as `--hero-copy-rise` by
+   * HomePage. The default value compensates for the page's top padding so the
+   * text block sits in the middle of the area below the sticky header; the
+   * nudges are capped at 13vh so large values stay safe on short windows.
    */
   .hero-column {
     min-height: calc(100vh - 10.5rem);
     min-height: calc(100dvh - 10.5rem);
   }
 
-  /*
-   * On the two-column landing layout (>= 1024px) the copy sits a little above
-   * the exact optical centre, which reads better once the page loads. The shift
-   * is a single tunable number: APP_CONFIG.layout.heroCopyRise (px), injected as
-   * `--hero-copy-rise` by HomePage. 0 keeps the centred position. The value is
-   * capped at 13vh and only applied to windows at least 700px tall, so short
-   * windows never slide the copy under the sticky header.
-   */
-  @media (min-width: 1024px) and (min-height: 700px) {
+  @media (min-width: 1024px) {
     .hero-column {
+      min-height: 0;
       transform: translateY(calc(-1 * min(var(--hero-copy-rise, 0px), 13vh)));
     }
   }
