@@ -15,8 +15,13 @@ import {
   type SpectrumData,
 } from '../lib/api';
 import { allBandIndices, arrayLabel, bandAt, bandIndicesForArray } from '../lib/sky/bands';
-import type { BandSelection, MoverCandidate, ProbeResponse } from '../lib/sky/workerTypes';
-import { useUrlSync } from '../hooks/useUrlSync';
+import type {
+  BandSelection,
+  CompareScale,
+  MoverCandidate,
+  ProbeResponse,
+} from '../lib/sky/workerTypes';
+import { useUrlSync, type WorkspaceMode } from '../hooks/useUrlSync';
 import { useSkyEngine } from '../hooks/useSkyEngine';
 import BlinkViewport from '../components/workspace/BlinkViewport';
 import ImageMathControls from '../components/workspace/ImageMathControls';
@@ -90,6 +95,7 @@ export default function WorkspacePage() {
   const findCandidates = engine.findCandidates;
 
   const [coaddMethod, setCoaddMethod] = useState<'sum' | 'mean'>('mean');
+  const [compareScale, setCompareScale] = useState<CompareScale>('shared');
   const [probe, setProbe] = useState<ProbeResponse | null>(null);
   const [selection, setSelection] = useState<{ x: number; y: number } | null>(null);
   const [spectrum, setSpectrum] = useState<SpectrumData | null>(null);
@@ -140,6 +146,7 @@ export default function WorkspacePage() {
       epochA,
       epochB,
       coaddMethod,
+      compareScale,
       stretch: {
         stretch: state.stretch,
         gain: state.gain,
@@ -159,6 +166,7 @@ export default function WorkspacePage() {
     state.gain,
     state.showFlags,
     coaddMethod,
+    compareScale,
     bandSelection.bandKey,
   ]);
 
@@ -281,6 +289,26 @@ export default function WorkspacePage() {
     update({ playing: !state.playing });
   }, [state.mode, state.playing, epochs.length, update]);
 
+  /**
+   * Difference and compare both need two distinct visits: switching into them
+   * with A === B would only show the same frame twice, so B falls back to the
+   * last available epoch.
+   */
+  const changeMode = useCallback(
+    (mode: WorkspaceMode) => {
+      update({
+        mode,
+        playing: false,
+        epochA,
+        epochB:
+          (mode === 'diff' || mode === 'compare') && epochB === epochA
+            ? availableEpochs[availableEpochs.length - 1] ?? epochA
+            : epochB,
+      });
+    },
+    [update, epochA, epochB, availableEpochs],
+  );
+
   const stepEpoch = useCallback(
     (direction: number) => {
       if (epochs.length === 0) return;
@@ -296,20 +324,20 @@ export default function WorkspacePage() {
 
   /* -------------------------------------------------------------- probes */
   const handleProbe = useCallback(
-    async (x: number, y: number) => {
+    async (x: number, y: number, epoch: number) => {
       if (!ready) return;
       try {
-        const result = await probePixel(epochIndex, x, y);
+        const result = await probePixel(epoch, x, y);
         setProbe(result);
       } catch {
         // transient worker errors are non-fatal
       }
     },
-    [probePixel, ready, epochIndex],
+    [probePixel, ready],
   );
 
   const handleSelect = useCallback(
-    async (x: number, y: number) => {
+    async (x: number, y: number, epoch: number) => {
       if (!ready) return;
       setSelection({ x, y });
       // Tangent-plane pixel -> sky, identical to the worker's `skyFromPixel`.
@@ -324,7 +352,7 @@ export default function WorkspacePage() {
           360) %
         360;
       try {
-        const result = await probePixel(epochIndex, x, y);
+        const result = await probePixel(epoch, x, y);
         setProbe(result);
         if (Number.isFinite(result.ra) && Number.isFinite(result.dec)) {
           targetRa = result.ra;
@@ -338,7 +366,7 @@ export default function WorkspacePage() {
       setSpectrumLoading(true);
       setSpectrumError(null);
       try {
-        const data = await fetchSpectrum(targetRa, targetDec, state.fov, epochIndex, {
+        const data = await fetchSpectrum(targetRa, targetDec, state.fov, epoch, {
           ra: state.ra,
           dec: state.dec,
         });
@@ -353,7 +381,7 @@ export default function WorkspacePage() {
         if (token === spectrumTokenRef.current) setSpectrumLoading(false);
       }
     },
-    [probePixel, ready, epochIndex, state.ra, state.dec, state.fov, frameSize],
+    [probePixel, ready, state.ra, state.dec, state.fov, frameSize],
   );
 
   const handleCandidateSelect = useCallback(
@@ -361,7 +389,7 @@ export default function WorkspacePage() {
       setCandidateFocus(index);
       const epoch = candidate.sign > 0 ? epochB : epochA;
       update({ epoch });
-      void handleSelect(candidate.x, candidate.y);
+      void handleSelect(candidate.x, candidate.y, epoch);
     },
     [handleSelect, epochA, epochB, update],
   );
@@ -403,21 +431,28 @@ export default function WorkspacePage() {
           togglePlay();
           break;
         case 'ArrowRight':
+          // In compare mode the arrows nudge the before/after divider; the
+          // slider owns that gesture, so the timeline stays where it is.
+          if (state.mode === 'compare') return;
           event.preventDefault();
           stepEpoch(1);
           break;
         case 'ArrowLeft':
+          if (state.mode === 'compare') return;
           event.preventDefault();
           stepEpoch(-1);
           break;
         case 'b':
-          update({ mode: 'blink' });
+          changeMode('blink');
           break;
         case 'c':
-          update({ mode: 'coadd' });
+          changeMode('coadd');
           break;
         case 'd':
-          update({ mode: 'diff' });
+          changeMode('diff');
+          break;
+        case 'v':
+          changeMode(state.mode === 'compare' ? 'blink' : 'compare');
           break;
         case 'g':
           update({ overlays: { grid: !state.overlays.grid } });
@@ -437,7 +472,16 @@ export default function WorkspacePage() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [togglePlay, stepEpoch, update, state.overlays.grid, state.overlays.labels, state.showFlags]);
+  }, [
+    togglePlay,
+    stepEpoch,
+    changeMode,
+    update,
+    state.mode,
+    state.overlays.grid,
+    state.overlays.labels,
+    state.showFlags,
+  ]);
 
   /* -------------------------------------------------------------- actions */
   const applyCoordinates = useCallback(
@@ -493,9 +537,17 @@ export default function WorkspacePage() {
       ? t.workspace.modeBlink
       : state.mode === 'coadd'
         ? t.workspace.modeCoadd
-        : t.workspace.modeDiff;
+        : state.mode === 'diff'
+          ? t.workspace.modeDiff
+          : t.workspace.modeCompare;
 
   const epoch = epochs.find((item) => item.index === epochIndex) ?? epochs[0] ?? null;
+  // The metadata panel must describe the plane on screen: in compare mode that
+  // is the A/B pair, not whatever epoch the blink timeline happens to hold.
+  const epochAMeta = epochs.find((item) => item.index === epochA) ?? null;
+  const epochBMeta = epochs.find((item) => item.index === epochB) ?? null;
+  const metadataEpoch = state.mode === 'compare' ? epochAMeta : epoch;
+  const metadataEpochB = state.mode === 'compare' ? epochBMeta : null;
   const selectedBandIndex =
     state.channel.type === 'band' ? state.channel.band : detector > 0 ? (detector - 1) * 17 + 8 : 45;
 
@@ -721,26 +773,19 @@ export default function WorkspacePage() {
               <ImageMathControls
                 mode={state.mode}
                 coaddMethod={coaddMethod}
+                compareScale={compareScale}
                 epochA={epochA}
                 epochB={epochB}
                 epochs={epochs}
                 stretch={state.stretch}
                 gain={state.gain}
                 showFlags={state.showFlags}
-                onModeChange={(mode) =>
-                  update({
-                    mode,
-                    playing: false,
-                    epochA,
-                    epochB:
-                      mode === 'diff' && epochB === epochA
-                        ? availableEpochs[availableEpochs.length - 1] ?? epochA
-                        : epochB,
-                  })
-                }
+                onModeChange={changeMode}
                 onCoaddMethodChange={setCoaddMethod}
+                onCompareScaleChange={setCompareScale}
                 onEpochAChange={(value) => update({ epochA: value })}
                 onEpochBChange={(value) => update({ epochB: value })}
+                onSwapEpochs={() => update({ epochA: epochB, epochB: epochA })}
                 onStretchChange={(stretch) => update({ stretch })}
                 onGainChange={(gain) => update({ gain })}
                 onShowFlagsChange={(showFlags) => update({ showFlags })}
@@ -749,7 +794,8 @@ export default function WorkspacePage() {
               <MetadataInspector
                 probe={probe}
                 frame={frame}
-                epoch={epoch}
+                epoch={metadataEpoch}
+                epochB={metadataEpochB}
                 bandLabel={bandSelection.bandLabel}
                 fieldRa={state.ra}
                 fieldDec={state.dec}

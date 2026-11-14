@@ -215,6 +215,7 @@ const en = {
     modeBlink: 'Blink',
     modeCoadd: 'Co-Add',
     modeDiff: 'Difference',
+    modeCompare: 'Before / After',
     viewportTitle: 'Blink comparator',
     viewportBody:
       'Epochs play back like a video with play/pause, frame rate, ping-pong looping and a manual scrubber.',
@@ -227,6 +228,8 @@ const en = {
       'Sum or average every epoch to boost stationary sources and suppress read noise.',
     arithmeticDiffHint:
       'Epoch B minus epoch A cancels the static sky; every mover becomes a cyan/rose dipole.',
+    arithmeticCompareHint:
+      'Wipe one visit over another: drag the divider to sweep the seam across the same sky grid.',
     bandsTitle: '102 bands & 6 detector arrays',
     bandsBody:
       'Stack the 17 bands of each detector array for maximum SNR, or scrub individual narrow bands from 0.75 to 5.0 µm.',
@@ -262,6 +265,19 @@ const en = {
     diffA: 'Epoch A',
     diffB: 'Epoch B',
     diffLegend: 'Rose = new flux · Cyan = flux that disappeared.',
+    compareBefore: 'Before (A)',
+    compareAfter: 'After (B)',
+    compareSameEpoch: 'Same epoch on both sides — pick another visit',
+    compareDragHint:
+      'Drag the handle · ←/→ nudge 1% · Shift+←/→ 10% · double-click resets to 50% · V exits',
+    splitPosition: 'Divider position',
+    swapEpochs: 'Swap A / B',
+    compareScaleLabel: 'Brightness scale',
+    compareSharedStretch: 'Shared',
+    comparePerFrameStretch: 'Per frame',
+    compareScaleHint:
+      'Shared: one p1/p99 for both halves, so a real flux change stays visible across the seam.',
+    compareMissingSide: 'No archive plane for epoch B — pick another visit',
     molecularMarkers: 'Molecular markers',
     markersHint: 'click a marker to load its nearest band',
     stretchLabel: 'Display stretch',
@@ -285,7 +301,8 @@ const en = {
     exposure: 'Exposure',
     frame: 'frame',
     keyboardHint: 'Space · ← → · D diff · C co-add',
-    shortcuts: 'Shortcuts: Space play/pause · ←/→ epoch · B blink · C co-add · D difference · F flags · G grid · L labels · Esc clear',
+    shortcuts:
+      'Shortcuts: Space play/pause · ←/→ epoch · B blink · C co-add · D difference · V before/after · F flags · G grid · L labels · Esc clear',
     playbackBlinkOnly: 'Playback is available in Blink mode.',
     channelBands: '102 bands',
     channelArrays: '6 arrays',
@@ -417,7 +434,10 @@ const en = {
     sectionLimitations: 'Limitations & roadmap',
 
     capabilitiesBody:
-      'Five instruments in one workspace, all executed in the browser on Float32Array buffers.',
+      'Six instruments in one workspace, all executed in the browser on Float32Array buffers.',
+    capabilityCompareTitle: 'Before / after wipe',
+    capabilityCompareBody:
+      'Any two visits of the same field are stacked on one resampled grid: drag the divider to sweep the seam across the sky, with a shared brightness scale so real flux changes stay visible.',
     capabilityBlinkTitle: 'Blink comparator',
     capabilityBlinkBody:
       'Time-series epochs play like a video so motion between visits is immediately obvious.',
@@ -480,11 +500,11 @@ const en = {
       'dec — declination in decimal degrees (−90 to +90)',
       'fov — field of view in degrees',
       'target — test-target slug (barnard, epsilon-indi-b, wise-0855, rw-aurigae, r-draconis)',
-      'mode — blink | coadd | diff',
+      'mode — blink | coadd | diff | compare',
       'band — 1–102, or 0 for the 102-band stack',
       'array — 1–6 to stack one detector array (overrides band)',
       'epoch — 0–5, the frame shown in Blink mode',
-      'a, b — epoch indices for difference imaging (0–5)',
+      'a, b — epoch indices for difference imaging and the before/after pair (0–5)',
       'fps — blinking frame rate, 0.5–12',
       'stretch — asinh | linear | sqrt | log',
       'gain — stretch gain, 0.5–40',
@@ -499,8 +519,9 @@ const en = {
     shortcutsBody: 'Every control is reachable from the keyboard while the workspace is focused.',
     shortcuts: [
       { keys: 'Space', action: 'Play or pause the blink loop' },
-      { keys: '← / →', action: 'Step one epoch backwards or forwards' },
+      { keys: '← / →', action: 'Step one epoch, or nudge the divider in compare mode' },
       { keys: 'B / C / D', action: 'Blink, co-add or difference mode' },
+      { keys: 'V', action: 'Toggle the before / after compare' },
       { keys: 'F', action: 'Toggle the contamination overlay' },
       { keys: 'G / L', action: 'Toggle the sky grid or source labels' },
       { keys: 'Esc', action: 'Clear the selected source and spectrum' },
@@ -768,6 +789,7 @@ const uk: Dictionary = {
     modeBlink: 'Миготіння',
     modeCoadd: 'Додавання',
     modeDiff: 'Різниця',
+    modeCompare: 'До / Після',
     viewportTitle: 'Компаратор миготіння',
     viewportBody:
       'Епохи відтворюються як відео: відтворення/пауза, частота кадрів, маятниковий цикл і ручний скраббер.',
@@ -780,6 +802,8 @@ const uk: Dictionary = {
       'Сума або середнє всіх епох підсилює нерухомі джерела та пригнічує шум зчитування.',
     arithmeticDiffHint:
       'Епоха B мінус епоха A гасить нерухоме небо; кожен рухомий об’єкт стає бірюзово-рожевим диполем.',
+    arithmeticCompareHint:
+      'Накладіть один візит на інший: тягніть розділювач, і шов іде по тій самій сітці неба.',
     bandsTitle: '102 канали та 6 матриць',
     bandsBody:
       'Сума 17 каналів кожної матриці дає максимальний SNR, або переглядайте окремі вузькі канали від 0,75 до 5,0 мкм.',
@@ -815,6 +839,19 @@ const uk: Dictionary = {
     diffA: 'Епоха A',
     diffB: 'Епоха B',
     diffLegend: 'Рожевий — новий потік · Бірюзовий — потік, що зник.',
+    compareBefore: 'До (A)',
+    compareAfter: 'Після (B)',
+    compareSameEpoch: 'З обох боків та сама епоха — оберіть інший візит',
+    compareDragHint:
+      'Тягніть ручку · ←/→ зсув на 1 % · Shift+←/→ на 10 % · подвійний клік повертає 50 % · V вихід',
+    splitPosition: 'Позиція розділювача',
+    swapEpochs: 'Поміняти A / B',
+    compareScaleLabel: 'Шкала яскравості',
+    compareSharedStretch: 'Спільна',
+    comparePerFrameStretch: 'Для кожного',
+    compareScaleHint:
+      'Спільна: один p1/p99 для обох половин, тож справжня зміна потоку лишається видимою на шві.',
+    compareMissingSide: 'Немає архівної площини для епохи B — оберіть інший візит',
     molecularMarkers: 'Молекулярні маркери',
     markersHint: 'клацніть маркер, щоб завантажити найближчий канал',
     stretchLabel: 'Розтяг зображення',
@@ -839,7 +876,7 @@ const uk: Dictionary = {
     frame: 'кадр',
     keyboardHint: 'Space · ← → · D різниця · C додавання',
     shortcuts:
-      'Клавіші: Space — відтворення/пауза · ←/→ — епоха · B — миготіння · C — додавання · D — різниця · F — прапорці · G — сітка · L — підписи · Esc — очистити',
+      'Клавіші: Space — відтворення/пауза · ←/→ — епоха · B — миготіння · C — додавання · D — різниця · V — до/після · F — прапорці · G — сітка · L — підписи · Esc — очистити',
     playbackBlinkOnly: 'Відтворення доступне в режимі миготіння.',
     channelBands: '102 канали',
     channelArrays: '6 матриць',
@@ -971,7 +1008,10 @@ const uk: Dictionary = {
     sectionLimitations: 'Обмеження та план розвитку',
 
     capabilitiesBody:
-      'П’ять інструментів в одному робочому полі — усі виконуються в браузері на буферах Float32Array.',
+      'Шість інструментів в одному робочому полі — усі виконуються в браузері на буферах Float32Array.',
+    capabilityCompareTitle: 'Шторка «до/після»',
+    capabilityCompareBody:
+      'Будь-які два візити того самого поля лягають на одну перепроєктовану сітку: тягніть розділювач, і шов іде по небу, а спільна шкала яскравості зберігає видимою справжню зміну потоку.',
     capabilityBlinkTitle: 'Компаратор миготіння',
     capabilityBlinkBody:
       'Епохи часового ряду відтворюються як відео, тож рух між відвідинами видно одразу.',
@@ -1034,11 +1074,11 @@ const uk: Dictionary = {
       'dec — схилення в десяткових градусах (−90…+90)',
       'fov — поле зору в градусах',
       'target — ідентифікатор об’єкта (barnard, epsilon-indi-b, wise-0855, rw-aurigae, r-draconis)',
-      'mode — blink | coadd | diff',
+      'mode — blink | coadd | diff | compare',
       'band — 1–102, або 0 для стеку зі 102 каналів',
       'array — 1–6 для стеку однієї матриці (перекриває band)',
       'epoch — 0–5, кадр у режимі миготіння',
-      'a, b — індекси епох для різницевого зображення (0–5)',
+      'a, b — індекси епох для різницевого зображення та пари «до/після» (0–5)',
       'fps — частота миготіння, 0,5–12',
       'stretch — asinh | linear | sqrt | log',
       'gain — підсилення розтягу, 0,5–40',
@@ -1053,8 +1093,9 @@ const uk: Dictionary = {
     shortcutsBody: 'Усі елементи керування доступні з клавіатури, коли робоче поле у фокусі.',
     shortcuts: [
       { keys: 'Space', action: 'Відтворити або зупинити миготіння' },
-      { keys: '← / →', action: 'Перейти на одну епоху назад або вперед' },
+      { keys: '← / →', action: 'Перейти на одну епоху або зсунути розділювач у режимі порівняння' },
       { keys: 'B / C / D', action: 'Режим миготіння, додавання або різниці' },
+      { keys: 'V', action: 'Увімкнути або вимкнути порівняння «до/після»' },
       { keys: 'F', action: 'Перемкнути накладання забруднення' },
       { keys: 'G / L', action: 'Перемкнути сітку неба або підписи джерел' },
       { keys: 'Esc', action: 'Очистити вибране джерело та спектр' },

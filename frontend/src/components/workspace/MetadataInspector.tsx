@@ -11,6 +11,8 @@ interface MetadataInspectorProps {
   probe: ProbeResponse | null;
   frame: SkyFrame | null;
   epoch: FieldEpoch | null;
+  /** Before/after mode: the second visit shown on the right half. */
+  epochB?: FieldEpoch | null;
   bandLabel: string;
   fieldRa: number;
   fieldDec: number;
@@ -21,6 +23,7 @@ export default function MetadataInspector({
   probe,
   frame,
   epoch,
+  epochB,
   bandLabel,
   fieldRa,
   fieldDec,
@@ -45,10 +48,16 @@ export default function MetadataInspector({
           <dt className="label-mono">{t.workspace.epochTime}</dt>
           <dd className="mt-0.5 font-mono text-[10px] text-zinc-200">
             {epoch ? `MJD ${epoch.mjd.toFixed(4)}` : '—'}
+            {epochB ? ` → ${epochB.mjd.toFixed(4)}` : ''}
           </dd>
           <dd className="font-mono text-[8px] text-zinc-600">
             {epoch ? `${formatUTCDateTime(epoch.mjd)} UTC` : ''}
           </dd>
+          {epochB && (
+            <dd className="font-mono text-[8px] text-zinc-600">
+              → {formatUTCDateTime(epochB.mjd)} UTC
+            </dd>
+          )}
         </div>
         <div className="bg-canvas px-2 py-1.5">
           <dt className="label-mono">{t.workspace.exposure}</dt>

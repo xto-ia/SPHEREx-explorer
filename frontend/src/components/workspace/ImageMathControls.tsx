@@ -1,11 +1,20 @@
-﻿import { Layers, SplitSquareHorizontal, SlidersHorizontal, Wand2 } from 'lucide-react';
+﻿import {
+  ArrowLeftRight,
+  Columns2,
+  Layers,
+  SplitSquareHorizontal,
+  SlidersHorizontal,
+  Wand2,
+} from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import type { FieldEpoch } from '../../lib/sky/field';
+import type { CompareScale } from '../../lib/sky/workerTypes';
 import type { StretchMode, WorkspaceMode } from '../../hooks/useUrlSync';
 
 interface ImageMathControlsProps {
   mode: WorkspaceMode;
   coaddMethod: 'sum' | 'mean';
+  compareScale: CompareScale;
   epochA: number;
   epochB: number;
   epochs: FieldEpoch[];
@@ -14,8 +23,10 @@ interface ImageMathControlsProps {
   showFlags: boolean;
   onModeChange: (mode: WorkspaceMode) => void;
   onCoaddMethodChange: (method: 'sum' | 'mean') => void;
+  onCompareScaleChange: (scale: CompareScale) => void;
   onEpochAChange: (value: number) => void;
   onEpochBChange: (value: number) => void;
+  onSwapEpochs: () => void;
   onStretchChange: (stretch: StretchMode) => void;
   onGainChange: (gain: number) => void;
   onShowFlagsChange: (value: boolean) => void;
@@ -25,11 +36,13 @@ const MODE_ICONS = {
   blink: Layers,
   coadd: SlidersHorizontal,
   diff: SplitSquareHorizontal,
+  compare: Columns2,
 } as const;
 
 export default function ImageMathControls({
   mode,
   coaddMethod,
+  compareScale,
   epochA,
   epochB,
   epochs,
@@ -38,8 +51,10 @@ export default function ImageMathControls({
   showFlags,
   onModeChange,
   onCoaddMethodChange,
+  onCompareScaleChange,
   onEpochAChange,
   onEpochBChange,
+  onSwapEpochs,
   onStretchChange,
   onGainChange,
   onShowFlagsChange,
@@ -50,7 +65,9 @@ export default function ImageMathControls({
     { id: 'blink', label: t.workspace.modeBlink },
     { id: 'coadd', label: t.workspace.modeCoadd },
     { id: 'diff', label: t.workspace.modeDiff },
+    { id: 'compare', label: t.workspace.modeCompare },
   ];
+  const pairMode = mode === 'diff' || mode === 'compare';
 
   return (
     <section className="bg-canvas/90 p-4" aria-labelledby="arithmetic-title">
@@ -63,7 +80,7 @@ export default function ImageMathControls({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-px border border-line bg-line">
+      <div className="mt-3 grid grid-cols-2 gap-px border border-line bg-line">
         {modes.map((item) => {
           const Icon = MODE_ICONS[item.id];
           return (
@@ -91,7 +108,9 @@ export default function ImageMathControls({
           ? t.workspace.arithmeticBlinkHint
           : mode === 'coadd'
             ? t.workspace.arithmeticCoaddHint
-            : t.workspace.arithmeticDiffHint}
+            : mode === 'diff'
+              ? t.workspace.arithmeticDiffHint
+              : t.workspace.arithmeticCompareHint}
       </p>
 
       {mode === 'coadd' && (
@@ -121,11 +140,13 @@ export default function ImageMathControls({
         </div>
       )}
 
-      {mode === 'diff' && (
+      {pairMode && (
         <div className="mt-3 space-y-2 border-t border-line/70 pt-3">
           <div className="grid grid-cols-2 gap-2">
             <label className="space-y-1">
-              <span className="label-mono block">{t.workspace.diffA}</span>
+              <span className="label-mono block">
+                {mode === 'compare' ? t.workspace.compareBefore : t.workspace.diffA}
+              </span>
               <select
                 value={epochA}
                 onChange={(event) => onEpochAChange(Number(event.target.value))}
@@ -139,7 +160,9 @@ export default function ImageMathControls({
               </select>
             </label>
             <label className="space-y-1">
-              <span className="label-mono block">{t.workspace.diffB}</span>
+              <span className="label-mono block">
+                {mode === 'compare' ? t.workspace.compareAfter : t.workspace.diffB}
+              </span>
               <select
                 value={epochB}
                 onChange={(event) => onEpochBChange(Number(event.target.value))}
@@ -153,9 +176,48 @@ export default function ImageMathControls({
               </select>
             </label>
           </div>
-          <p className="font-mono text-[9px] leading-relaxed text-zinc-600">
-            {t.workspace.diffLegend}
-          </p>
+
+          <button
+            type="button"
+            onClick={onSwapEpochs}
+            className="flex w-full items-center justify-center gap-1.5 border border-line py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-zinc-500 transition-colors hover:border-line-hover hover:text-zinc-200"
+          >
+            <ArrowLeftRight size={10} aria-hidden="true" />
+            {t.workspace.swapEpochs}
+          </button>
+
+          {mode === 'compare' ? (
+            <>
+              <span className="label-mono block">{t.workspace.compareScaleLabel}</span>
+              <div className="grid grid-cols-2 gap-px border border-line bg-line">
+                {(['shared', 'per-frame'] as const).map((scale) => (
+                  <button
+                    key={scale}
+                    type="button"
+                    onClick={() => onCompareScaleChange(scale)}
+                    aria-pressed={compareScale === scale}
+                    className={[
+                      'py-1.5 font-mono text-[9px] uppercase tracking-[0.08em] transition-colors',
+                      compareScale === scale
+                        ? 'bg-accent/10 text-accent'
+                        : 'bg-canvas text-zinc-500 hover:text-zinc-200',
+                    ].join(' ')}
+                  >
+                    {scale === 'shared'
+                      ? t.workspace.compareSharedStretch
+                      : t.workspace.comparePerFrameStretch}
+                  </button>
+                ))}
+              </div>
+              <p className="font-mono text-[9px] leading-relaxed text-zinc-600">
+                {t.workspace.compareScaleHint}
+              </p>
+            </>
+          ) : (
+            <p className="font-mono text-[9px] leading-relaxed text-zinc-600">
+              {t.workspace.diffLegend}
+            </p>
+          )}
         </div>
       )}
 

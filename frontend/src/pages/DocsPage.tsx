@@ -34,6 +34,7 @@ export default function DocsPage() {
     { title: t.docs.capabilityArrayTitle, body: t.docs.capabilityArrayBody, tag: '03' },
     { title: t.docs.capabilitySpectrumTitle, body: t.docs.capabilitySpectrumBody, tag: '04' },
     { title: t.docs.capabilityScanTitle, body: t.docs.capabilityScanBody, tag: '05' },
+    { title: t.docs.capabilityCompareTitle, body: t.docs.capabilityCompareBody, tag: '06' },
   ];
 
   const sources = [

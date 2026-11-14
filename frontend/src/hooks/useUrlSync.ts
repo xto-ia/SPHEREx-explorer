@@ -4,7 +4,7 @@ import { findTargetBySlug, TEST_TARGETS, type TargetSlug } from '../data/targets
 import { clamp } from '../lib/format';
 import { toUrlNumber } from '../lib/coords';
 
-export type WorkspaceMode = 'blink' | 'coadd' | 'diff';
+export type WorkspaceMode = 'blink' | 'coadd' | 'diff' | 'compare';
 export type StretchMode = 'asinh' | 'linear' | 'sqrt' | 'log';
 export type ChannelType = 'band' | 'array' | 'all';
 
@@ -93,7 +93,11 @@ export function readWorkspaceState(params: URLSearchParams): WorkspaceState {
   const dec = parseNumber(params.get('dec'), fallback.dec);
   const fov = clamp(parseNumber(params.get('fov'), fallback.recommendedFov), 0.02, 12);
 
-  const mode = parseEnum<WorkspaceMode>(params.get('mode'), ['blink', 'coadd', 'diff'], 'blink');
+  const mode = parseEnum<WorkspaceMode>(
+    params.get('mode'),
+    ['blink', 'coadd', 'diff', 'compare'],
+    'blink',
+  );
   const bandParam = params.get('band');
   const arrayParam = params.get('array');
   const band = Math.round(clamp(parseNumber(bandParam, 0), 0, 102));

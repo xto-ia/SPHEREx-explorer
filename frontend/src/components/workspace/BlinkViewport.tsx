@@ -7,6 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import {
+  Columns2,
   Crosshair,
   Download,
   Loader2,
@@ -26,6 +27,7 @@ import type { NeossatObservation, OverlaySource } from '../../lib/api';
 import type { SkyFrame } from '../../hooks/useSkyEngine';
 import type { MoverCandidate, ProbeResponse } from '../../lib/sky/workerTypes';
 import type { WorkspaceMode, WorkspaceState } from '../../hooks/useUrlSync';
+import CompareSlider from './CompareSlider';
 
 interface BlinkViewportProps {
   frame: SkyFrame | null;
@@ -55,8 +57,9 @@ interface BlinkViewportProps {
   candidates: MoverCandidate[];
   focusMarker: MoverCandidate | null;
   showFlags: boolean;
-  onProbe: (x: number, y: number) => void;
-  onSelect: (x: number, y: number) => void;
+  /** `epoch` is the frame under the cursor: in compare mode it is the A or B plane. */
+  onProbe: (x: number, y: number, epoch: number) => void;
+  onSelect: (x: number, y: number, epoch: number) => void;
   onTogglePlay: () => void;
   onStep: (direction: number) => void;
   onEpochChange: (epoch: number) => void;
@@ -263,8 +266,13 @@ export default function BlinkViewport({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lastProbeRef = useRef(0);
   const [fullscreen, setFullscreen] = useState(false);
+  // Divider position is view state, not science state: it stays out of the URL
+  // so the link keeps only `mode`, `a` and `b`.
+  const [split, setSplit] = useState(50);
 
   const epoch = epochs.find((item) => item.index === epochIndex) ?? epochs[0] ?? null;
+  const epochAEpoch = epochs.find((item) => item.index === epochA) ?? null;
+  const epochBEpoch = epochs.find((item) => item.index === epochB) ?? null;
   // `epochIndex` is a real archive epoch index; the timeline is a filtered
   // list, so the scrubber works on positions.
   const epochPosition = Math.max(
@@ -447,7 +455,9 @@ export default function BlinkViewport({
     ctx.fillStyle = 'rgba(113, 113, 122, 0.75)';
     ctx.textAlign = 'left';
     ctx.fillText(`ICRS · ${formatPixelScale(scale)}`, 12, 30);
-    if (epoch) {
+    // The compare bar below the frame prints both MJDs, so the canvas keeps a
+    // single timestamp only when there is a single epoch on screen.
+    if (epoch && mode !== 'compare') {
       ctx.textAlign = 'right';
       ctx.fillText(`MJD ${epoch.mjd.toFixed(2)}`, size - 12, size - 30);
     }
@@ -464,6 +474,7 @@ export default function BlinkViewport({
     candidates,
     focusMarker,
     epoch,
+    mode,
   ]);
 
   useEffect(() => {
@@ -488,35 +499,54 @@ export default function BlinkViewport({
       if (now - lastProbeRef.current < 70) return;
       lastProbeRef.current = now;
       const point = pixelFromEvent(event);
-      if (point) onProbe(point.x, point.y);
+      if (point) onProbe(point.x, point.y, epochIndex);
     },
-    [onProbe, pixelFromEvent],
+    [onProbe, pixelFromEvent, epochIndex],
   );
 
   const handleClick = useCallback(
     (event: ReactMouseEvent<HTMLCanvasElement>) => {
       const point = pixelFromEvent(event);
-      if (point) onSelect(point.x, point.y);
+      if (point) onSelect(point.x, point.y, epochIndex);
     },
-    [onSelect, pixelFromEvent],
+    [onSelect, pixelFromEvent, epochIndex],
   );
 
   const downloadFrame = useCallback(() => {
-    const image = canvasRef.current;
-    const overlay = overlayRef.current;
-    if (!image) return;
+    if (!frame) return;
     const output = document.createElement('canvas');
     output.width = size;
     output.height = size;
     const context = output.getContext('2d');
     if (!context) return;
-    context.drawImage(image, 0, 0);
-    if (overlay) context.drawImage(overlay, 0, 0);
+
+    // Compose from the worker's real planes instead of the DOM canvases so the
+    // export works in every mode, including the clipped compare view.
+    const composite = new Uint8ClampedArray(frame.rgba);
+    if (mode === 'compare' && frame.rgbaB) {
+      const cut = Math.round((split / 100) * size);
+      for (let y = 0; y < size; y += 1) {
+        for (let x = cut; x < size; x += 1) {
+          const offset = (y * size + x) * 4;
+          composite[offset] = frame.rgbaB[offset];
+          composite[offset + 1] = frame.rgbaB[offset + 1];
+          composite[offset + 2] = frame.rgbaB[offset + 2];
+          composite[offset + 3] = frame.rgbaB[offset + 3];
+        }
+      }
+    }
+    context.putImageData(new ImageData(composite, size, size), 0, 0);
+    if (overlayRef.current) context.drawImage(overlayRef.current, 0, 0);
+
+    const suffix =
+      mode === 'compare'
+        ? `a${epochAPosition + 1}-b${epochBPosition + 1}`
+        : `e${epochPosition + 1}`;
     const link = document.createElement('a');
-    link.download = `spherex-${targetName.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-e${epochPosition + 1}.png`;
+    link.download = `spherex-${targetName.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${suffix}.png`;
     link.href = output.toDataURL('image/png');
     link.click();
-  }, [size, targetName, epochPosition]);
+  }, [frame, mode, size, split, targetName, epochPosition, epochAPosition, epochBPosition]);
 
   const toggleFullscreen = useCallback(async () => {
     const element = containerRef.current;
@@ -562,7 +592,11 @@ export default function BlinkViewport({
           */}
           <div className="flex flex-wrap items-center gap-2 tabular-nums">
             <span className="chip normal-case tracking-[0.06em]">{bandLabel}</span>
-            {mode === 'diff' ? (
+            {mode === 'compare' ? (
+              <span className="chip">
+                E{epochAPosition + 1} │ E{epochBPosition + 1}
+              </span>
+            ) : mode === 'diff' ? (
               <span className="chip">
                 E{epochAPosition + 1} → E{epochBPosition + 1}
               </span>
@@ -638,16 +672,28 @@ export default function BlinkViewport({
             : undefined
         }
       >
-        <canvas
-          ref={canvasRef}
-          width={size}
-          height={size}
-          onPointerMove={handlePointer}
-          onPointerDown={handleClick}
-          className="absolute inset-0 h-full w-full cursor-crosshair touch-none"
-          aria-label={`${t.workspace.viewportTitle} · ${targetName} · ${epoch?.label ?? ''}`}
-          role="img"
-        />
+        {mode === 'compare' ? (
+          <CompareSlider
+            rgbaA={frame?.rgba ?? null}
+            rgbaB={frame?.rgbaB ?? null}
+            size={size}
+            split={split}
+            onSplitChange={setSplit}
+            onProbe={(x, y, side) => onProbe(x, y, side === 'a' ? epochA : epochB)}
+            onSelect={(x, y, side) => onSelect(x, y, side === 'a' ? epochA : epochB)}
+          />
+        ) : (
+          <canvas
+            ref={canvasRef}
+            width={size}
+            height={size}
+            onPointerMove={handlePointer}
+            onPointerDown={handleClick}
+            className="absolute inset-0 h-full w-full cursor-crosshair touch-none"
+            aria-label={`${t.workspace.viewportTitle} · ${targetName} · ${epoch?.label ?? ''}`}
+            role="img"
+          />
+        )}
         <canvas
           ref={overlayRef}
           width={size}
@@ -655,6 +701,12 @@ export default function BlinkViewport({
           className="pointer-events-none absolute inset-0 h-full w-full"
           aria-hidden="true"
         />
+
+        {mode === 'compare' && frame && !frame.rgbaB && (
+          <div className="pointer-events-none absolute inset-x-4 bottom-4 border border-warn/50 bg-canvas/85 px-3 py-2 text-center font-mono text-[9px] uppercase tracking-[0.14em] text-warn">
+            {t.workspace.compareMissingSide}
+          </div>
+        )}
 
         {!ready && !error && (
           <div className="absolute inset-0 grid place-items-center bg-canvas/70 backdrop-blur-sm">
@@ -836,6 +888,49 @@ export default function BlinkViewport({
             </div>
           </div>
         </>
+      ) : mode === 'compare' ? (
+        <div className="border-t border-line p-3 sm:p-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2">
+            <div className="min-w-0 font-mono text-[9px] uppercase tracking-[0.1em]">
+              <p className="flex items-center gap-1.5 text-zinc-300">
+                <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 bg-accent" />
+                {t.workspace.compareBefore}
+              </p>
+              <p className="mt-1 truncate text-zinc-400">{epochAEpoch?.label ?? `E${epochAPosition + 1}`}</p>
+              <p className="truncate text-zinc-600">
+                MJD {epochAEpoch ? epochAEpoch.mjd.toFixed(3) : '—'}
+                {epochAEpoch?.exposure ? ` · ${epochAEpoch.exposure.toFixed(0)}s` : ''}
+              </p>
+            </div>
+
+            <div className="grid place-items-center gap-1 px-2 font-mono text-[9px] uppercase tracking-[0.12em] text-accent">
+              <Columns2 size={12} aria-hidden="true" />
+              <span className="tabular-nums">{Math.round(split)}%</span>
+            </div>
+
+            <div className="min-w-0 text-right font-mono text-[9px] uppercase tracking-[0.1em]">
+              <p className="flex items-center justify-end gap-1.5 text-zinc-300">
+                {t.workspace.compareAfter}
+                <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 bg-[#38bdf8]" />
+              </p>
+              <p className="mt-1 truncate text-zinc-400">{epochBEpoch?.label ?? `E${epochBPosition + 1}`}</p>
+              <p className="truncate text-zinc-600">
+                MJD {epochBEpoch ? epochBEpoch.mjd.toFixed(3) : '—'}
+                {epochBEpoch?.exposure ? ` · ${epochBEpoch.exposure.toFixed(0)}s` : ''}
+              </p>
+            </div>
+          </div>
+
+          {epochA === epochB && (
+            <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-warn">
+              {t.workspace.compareSameEpoch}
+            </p>
+          )}
+
+          <p className="mt-2 border-t border-line/70 pt-2 font-mono text-[8px] uppercase tracking-[0.1em] text-zinc-600">
+            {t.workspace.compareDragHint}
+          </p>
+        </div>
       ) : (
         <div className="border-t border-line p-3 sm:p-4">
           <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
