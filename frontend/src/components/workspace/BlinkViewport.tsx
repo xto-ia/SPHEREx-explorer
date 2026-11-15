@@ -97,6 +97,25 @@ function drawMarker(
 
 const NEOSSAT_RGB = '244, 63, 94';
 
+/**
+ * Proper-motion arrows are a *time* baseline, not a sky length: SPHEREx samples
+ * the sky at 6.15"/pixel, so ten years of a typical 7 mas/yr star is 0.07" —
+ * a hundredth of a pixel. The true length is used whenever it reaches the
+ * floor; slower stars keep a short stub so the direction stays readable, and
+ * the panel documents that convention.
+ */
+const PM_BASELINE_YEARS = 10;
+const PM_MIN_PX = 3;
+const PM_MAX_PX = 48;
+
+/**
+ * Above this many catalogue markers the diamonds turn into sub-pixel dots.
+ * A dense 0.5 deg field holds thousands of Gaia sources; drawn at full size
+ * they would cover a third of the frame and hide the SPHEREx image itself.
+ */
+const DENSE_MARKER_COUNT = 700;
+
+
 /** Vertices of a real CADC footprint, or a square from the catalogued size. */
 function footprintOf(observation: NeossatObservation): Array<[number, number]> | null {
   if (observation.region && observation.region.length >= 3) return observation.region;
@@ -310,6 +329,7 @@ export default function BlinkViewport({
     ctx.textBaseline = 'middle';
     const centrePixel = (size - 1) / 2;
     const centre = { ra, dec, fov };
+    const dense = overlaySources.length > DENSE_MARKER_COUNT;
 
     if (overlays.grid) {
       ctx.save();
@@ -354,17 +374,28 @@ export default function BlinkViewport({
       if (point.x < -6 || point.y < -6 || point.x > size + 6 || point.y > size + 6) continue;
 
       if (isGaia) {
-        drawMarker(ctx, point.x, point.y, 'rgba(56, 189, 248, 0.9)', 'diamond', 3);
-        if (source.pmRa && source.pmDec) {
-          const vx = -(source.pmRa * 5) / scale;
-          const vy = -(source.pmDec * 5) / scale;
-          if (Math.hypot(vx, vy) > 2) {
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-            ctx.beginPath();
-            ctx.moveTo(point.x, point.y);
-            ctx.lineTo(point.x + vx, point.y + vy);
-            ctx.stroke();
-          }
+        // Thousands of catalogue entries must read as a star map, not as a
+        // solid block of glyphs: above the density threshold each source is a
+        // dot and the image stays visible underneath.
+        if (dense) {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
+          ctx.fillRect(point.x - 0.75, point.y - 0.75, 1.5, 1.5);
+        } else {
+          drawMarker(ctx, point.x, point.y, 'rgba(56, 189, 248, 0.9)', 'diamond', 3);
+        }
+        const pmRa = source.pmRa ?? 0;
+        const pmDec = source.pmDec ?? 0;
+        const total = Math.hypot(pmRa, pmDec);
+        if (total > 0) {
+          const truePx = (total * PM_BASELINE_YEARS) / 1000 / Math.max(scale, 1e-6);
+          const length = Math.min(PM_MAX_PX, Math.max(PM_MIN_PX, truePx));
+          const vx = -(pmRa / total) * length;
+          const vy = -(pmDec / total) * length;
+          ctx.strokeStyle = dense ? 'rgba(56, 189, 248, 0.28)' : 'rgba(56, 189, 248, 0.5)';
+          ctx.beginPath();
+          ctx.moveTo(point.x, point.y);
+          ctx.lineTo(point.x + vx, point.y + vy);
+          ctx.stroke();
         }
       } else {
         ctx.strokeStyle = 'rgba(245, 158, 11, 0.65)';

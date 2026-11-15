@@ -30,6 +30,14 @@ its own:
 | `wise` | IRSA TAP (`allwise_p3as_psd`) | W1–W4 magnitudes |
 | `neossat` | CADC TAP (`ivoa.ObsCore` + `caom2.Observation`) | real footprint polygon, exposure window, `target_moving` |
 
+Every layer also returns a `meta` block (`returned`, `total`, `truncated`,
+`magLimit`). Gaia is queried by the frame's bounding box (a circle over-fetches
+by 2.4×, and Gaia rejects POLYGON), ordered by `phot_g_mean_mag`, and capped at
+2 500 sources, so the badge reads "2 500 of 19 852 · G ≤ 17.5" rather than a
+bare 400. NEOSSat is capped at 240 footprints and reports the true number of
+distinct frames the same way. A layer whose archive cannot be reached answers
+with `errors` ("wise: timeout") — never with a silent zero.
+
 CADC moved its TAP service to `/argus/sync` and answers in VOTable only
 (`FORMAT=json` is rejected), so every TAP query goes through `app/tap.py`, which
 also raises on `QUERY_STATUS=ERROR` instead of returning zero rows. NEOSSat is a

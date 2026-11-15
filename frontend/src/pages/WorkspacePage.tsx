@@ -210,6 +210,7 @@ export default function WorkspacePage() {
           gaia: incoming.gaia ?? previous.gaia,
           wise: incoming.wise ?? previous.wise,
           neossat: incoming.neossat ?? previous.neossat,
+          meta: { ...previous.meta, ...incoming.meta },
           counts: { ...previous.counts, ...incoming.counts },
           errors: [
             ...previous.errors.filter((entry) => !failed.has(entry.split(':')[0])),
@@ -267,10 +268,8 @@ export default function WorkspacePage() {
     [overlayData],
   );
 
-  const neossatError = useMemo(
-    () => overlayData?.errors.find((entry) => entry.startsWith('neossat')) ?? null,
-    [overlayData],
-  );
+  const overlayMeta = useMemo(() => overlayData?.meta ?? {}, [overlayData]);
+  const overlayErrors = useMemo(() => overlayData?.errors ?? [], [overlayData]);
 
   /* ------------------------------------------------------------ playback */
   useEffect(() => {
@@ -809,7 +808,8 @@ export default function WorkspacePage() {
                   <CatalogOverlays
                     overlays={state.overlays}
                     counts={counts}
-                    neossatError={neossatError}
+                    meta={overlayMeta}
+                    errors={overlayErrors}
                     onToggle={(key, value) => update({ overlays: { [key]: value } })}
                   />
                 </div>

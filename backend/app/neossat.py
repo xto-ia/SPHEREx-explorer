@@ -5,6 +5,10 @@ CADC publishes NEOSSat metadata through its TAP service, which moved to
 the exact footprint polygon from ``ivoa.ObsCore.s_region``, the exposure window,
 the target name and the CADC ``target_moving`` flag. Nothing is interpolated;
 a field with no NEOSSat frame gets an empty list and the UI says so.
+
+``ivoa.ObsCore`` lists one row per CAOM2 artifact, so the same observation can
+appear twice; the overlay keeps one row per ``obs_id`` and reports the true
+number of distinct frames next to the capped list ("240 of 572").
 """
 
 from __future__ import annotations
@@ -18,6 +22,9 @@ from .tap import TapError, number, query, region_polygon, text
 # The archive holds hundreds of NEOSSat frames per square degree; the overlay is
 # a locator, not a data download, so the list is capped.
 MAX_OBSERVATIONS = 240
+# Upper bound for the follow-up scan that counts distinct frames when the cap
+# was hit. CADC answers a light obs_id-only query in a couple of seconds.
+TOTAL_SCAN = 2000
 
 
 def _moving_flags(obs_ids: list[str]) -> dict[str, bool | None]:
@@ -49,18 +56,42 @@ def _moving_flags(obs_ids: list[str]) -> dict[str, bool | None]:
     return flags
 
 
-def neossat_overlay(ra: float, dec: float, radius_deg: float) -> list[dict[str, Any]]:
-    key = cache.key("neossat-v2", round(ra, 4), round(dec, 4), round(radius_deg, 3))
+def _circle(ra: float, dec: float, radius_deg: float) -> str:
+    return f"1=INTERSECTS(s_region, CIRCLE('ICRS', {ra:.5f}, {dec:.5f}, {radius_deg:.4f}))"
+
+
+def _total_frames(ra: float, dec: float, radius_deg: float) -> int | None:
+    """Distinct NEOSSat frames overlapping the field, or None if unavailable."""
+
+    adql = (
+        f"SELECT TOP {TOTAL_SCAN} obs_id FROM ivoa.ObsCore "
+        "WHERE obs_collection = 'NEOSSAT' "
+        f"AND {_circle(ra, dec, radius_deg)} "
+        "ORDER BY t_min"
+    )
+    try:
+        rows = query(CADC_TAP_URL, adql, timeout=120.0)
+    except Exception:  # noqa: BLE001 - the count is context, not a dependency
+        return None
+    return len({text(row.get("obs_id")) for row in rows if text(row.get("obs_id"))})
+
+
+def neossat_overlay(
+    ra: float,
+    dec: float,
+    radius_deg: float,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    key = cache.key("neossat-v3", round(ra, 4), round(dec, 4), round(radius_deg, 3))
     cached = cache.get_json(key)
     if cached is not None:
-        return cached
+        return cached["items"], cached["meta"]
 
     adql = (
         f"SELECT TOP {MAX_OBSERVATIONS} obs_id, target_name, s_ra, s_dec, s_fov, s_region, "
         "t_min, t_max, t_exptime, instrument_name "
         "FROM ivoa.ObsCore "
         "WHERE obs_collection = 'NEOSSAT' "
-        f"AND 1=INTERSECTS(s_region, CIRCLE('ICRS', {ra:.5f}, {dec:.5f}, {radius_deg:.4f})) "
+        f"AND {_circle(ra, dec, radius_deg)} "
         "ORDER BY t_min"
     )
     rows = query(CADC_TAP_URL, adql, timeout=120.0)
@@ -91,9 +122,19 @@ def neossat_overlay(ra: float, dec: float, radius_deg: float) -> list[dict[str, 
     for obs_id, record in observations.items():
         record["moving"] = moving.get(obs_id)
 
-    result = list(observations.values())
-    cache.put_json(key, result, ttl=OVERLAY_CACHE_TTL)
-    return result
+    items = list(observations.values())
+    # Hitting TOP means the cap decided the list, not the sky.
+    truncated = len(rows) >= MAX_OBSERVATIONS
+    total = _total_frames(ra, dec, radius_deg) if truncated else len(items)
+    meta = {
+        "returned": len(items),
+        "total": total if total is not None else len(items),
+        "truncated": bool(truncated and total is not None and total > len(items)),
+        "limit": MAX_OBSERVATIONS,
+        "magLimit": None,
+    }
+    cache.put_json(key, {"items": items, "meta": meta}, ttl=OVERLAY_CACHE_TTL)
+    return items, meta
 
 
 __all__ = ["MAX_OBSERVATIONS", "TapError", "neossat_overlay"]

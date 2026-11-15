@@ -139,12 +139,30 @@ export interface NeossatObservation {
 
 export type OverlayLayer = 'gaia' | 'wise' | 'neossat';
 
+/**
+ * How complete a layer's list is.
+ *
+ * `total` is what the archive holds for this field, `returned` is what the
+ * backend sent. A layer capped by its own row budget (`truncated`) must be
+ * labelled "2 500 of 19 853" rather than pretending the sky ends at the limit.
+ */
+export interface OverlayMeta {
+  returned: number;
+  total: number | null;
+  truncated: boolean;
+  limit?: number;
+  /** Faintest Gaia magnitude included when the list had to be cut. */
+  magLimit?: number | null;
+}
+
 export interface OverlayData {
   radius: number;
   gaia?: OverlaySource[];
   wise?: OverlaySource[];
   neossat?: NeossatObservation[];
+  meta?: Partial<Record<OverlayLayer, OverlayMeta>>;
   counts: Partial<Record<OverlayLayer, number>>;
+  /** Per-layer upstream failures, shaped `"wise: timeout"`. */
   errors: string[];
 }
 
