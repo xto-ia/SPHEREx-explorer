@@ -717,7 +717,7 @@ const en = {
   },
 
   footer: {
-    tagline: 'Blink, subtract and measure the infrared sky on real archive frames.',
+    tagline: 'Exploring the infrared sky on real archive frames.',
     builtFor: 'Built for the NASA Space Apps Challenge',
     dataSources: 'Data: NASA/IPAC IRSA · ESA Gaia DR3 · CSA NEOSSat / CADC',
     missionNote: 'SPHEREx is a NASA Astrophysics Explorer mission.',
@@ -1428,7 +1428,7 @@ const uk: Dictionary = {
   },
 
   footer: {
-    tagline: 'Миготіння, віднімання та вимірювання інфрачервоного неба на реальних архівних кадрах.',
+    tagline: 'Дослідження інфрачервоного неба на реальних архівних кадрах.',
     builtFor: 'Створено для NASA Space Apps Challenge',
     dataSources: 'Дані: NASA/IPAC IRSA · ESA Gaia DR3 · CSA NEOSSat / CADC',
     missionNote: 'SPHEREx — місія NASA за програмою Astrophysics Explorer.',
