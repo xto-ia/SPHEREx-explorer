@@ -38,6 +38,8 @@ interface BlinkViewportProps {
   fov: number;
   ready: boolean;
   rendering: boolean;
+  /** A new display grid is downloading; the previous frame is already gone. */
+  gridLoading: boolean;
   status: string | null;
   error: string | null;
   mode: WorkspaceMode;
@@ -247,6 +249,7 @@ export default function BlinkViewport({
   fov,
   ready,
   rendering,
+  gridLoading,
   status,
   error,
   mode,
@@ -307,9 +310,17 @@ export default function BlinkViewport({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !frame) return;
+    if (!canvas) return;
     const context = canvas.getContext('2d');
     if (!context) return;
+    // The frame belongs to the grid it was computed on. If the size prop has
+    // already moved on (native sampling reload), painting the old buffer would
+    // throw IndexSizeError inside this effect and unmount the whole app, so a
+    // mismatched frame is skipped instead of trusted.
+    if (!frame || frame.rgba.length !== size * size * 4) {
+      context.clearRect(0, 0, size, size);
+      return;
+    }
     context.putImageData(new ImageData(new Uint8ClampedArray(frame.rgba), size, size), 0, 0);
   }, [frame, size]);
 
@@ -735,7 +746,7 @@ export default function BlinkViewport({
           </div>
         )}
 
-        {!ready && !error && (
+        {(!ready || gridLoading) && !error && (
           <div className="absolute inset-0 grid place-items-center bg-canvas/70 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
               <Loader2 size={22} className="animate-spin text-accent" aria-hidden="true" />

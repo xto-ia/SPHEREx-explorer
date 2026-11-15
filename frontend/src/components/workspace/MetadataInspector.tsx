@@ -3,7 +3,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { formatDec, formatRa } from '../../lib/coords';
 import { formatNumber, formatPercent, formatUTCDateTime } from '../../lib/format';
 import type { FieldEpoch } from '../../lib/sky/field';
-import { decodeFlags, contaminationFlags } from '../../lib/sky/flags';
+import { decodeFlags, unknownBits } from '../../lib/sky/flags';
 import type { SkyFrame } from '../../hooks/useSkyEngine';
 import type { ProbeResponse } from '../../lib/sky/workerTypes';
 
@@ -34,8 +34,11 @@ export default function MetadataInspector({
 }: MetadataInspectorProps) {
   const { t } = useLanguage();
   const decoded = probe ? decodeFlags(probe.flags) : [];
-  const contamination = probe ? contaminationFlags(probe.flags) : [];
-  const nominal = decoded.filter((flag) => flag.nominal);
+  const unusable = decoded.filter((flag) => flag.severity === 'unusable');
+  const caution = decoded.filter((flag) => flag.severity === 'caution');
+  const nominal = decoded.filter((flag) => flag.severity === 'nominal');
+  const unknown = probe ? unknownBits(probe.flags) : 0;
+  const flagsKnown = probe ? probe.flagsAvailable !== false : true;
 
   return (
     <section className="bg-canvas/90 p-4" aria-labelledby="metadata-title">
@@ -112,16 +115,30 @@ export default function MetadataInspector({
               <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-zinc-600">
                 {t.workspace.flagsTitle}
               </p>
-              {contamination.length === 0 ? (
+              {!flagsKnown ? (
+                <p className="mt-0.5 font-mono text-[9px] leading-relaxed text-warn">
+                  {t.workspace.flagsUnavailable}
+                </p>
+              ) : unusable.length === 0 && caution.length === 0 ? (
                 <p className="font-mono text-[9px] text-accent/80">{t.workspace.noFlags}</p>
               ) : (
                 <ul className="mt-0.5 space-y-0.5">
-                  {contamination.map((flag) => (
-                    <li key={flag.bit} className="font-mono text-[9px] text-amber-300/90">
-                      {flag.name} · bit {flag.bit}
+                  {unusable.map((flag) => (
+                    <li key={flag.bit} className="font-mono text-[9px] text-[#c084fc]">
+                      {flag.name} · bit {flag.bit} · {t.workspace.flagSeverityUnusable}
+                    </li>
+                  ))}
+                  {caution.map((flag) => (
+                    <li key={flag.bit} className="font-mono text-[9px] text-[#facc15]">
+                      {flag.name} · bit {flag.bit} · {t.workspace.flagSeverityCaution}
                     </li>
                   ))}
                 </ul>
+              )}
+              {flagsKnown && unknown !== 0 && (
+                <p className="mt-1 font-mono text-[8px] leading-relaxed text-warn">
+                  {t.workspace.flagUnknownBits.replace('{hex}', `0x${unknown.toString(16).toUpperCase()}`)}
+                </p>
               )}
               {nominal.length > 0 && (
                 <p className="mt-1 font-mono text-[8px] text-zinc-600">
@@ -141,7 +158,10 @@ export default function MetadataInspector({
             { label: 'p1', value: frame ? formatNumber(frame.stats.p1, 2) : '—' },
             { label: 'median', value: frame ? formatNumber(frame.stats.median, 2) : '—' },
             { label: 'p99', value: frame ? formatNumber(frame.stats.p99, 2) : '—' },
-            { label: t.workspace.flagged, value: frame ? formatPercent(frame.stats.flaggedFraction, 1) : '—' },
+            {
+              label: t.workspace.flagged,
+              value: frame && frame.flagsAvailable ? formatPercent(frame.stats.flaggedFraction, 1) : '—',
+            },
           ].map((item) => (
             <div key={item.label} className="bg-canvas px-1.5 py-1">
               <dt className="font-mono text-[8px] uppercase tracking-[0.08em] text-zinc-600">{item.label}</dt>

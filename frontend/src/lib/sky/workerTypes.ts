@@ -34,6 +34,8 @@ export interface EpochFrameMessage {
   mjd: number;
   image: Float32Array;
   flags: Uint32Array | null;
+  /** False when the product has no readable FLAGS extension. */
+  hasFlags: boolean;
   /** VARIANCE plane in (MJy/sr)^2, when the backend could provide it. */
   variance: Float32Array | null;
   /** Official channel index per pixel (0-18). */
@@ -116,10 +118,14 @@ export interface FrameStats {
 export interface FrameResponse {
   type: 'frame';
   requestId: number;
+  /** Display grid of this response; the viewport must not paint a stale size. */
+  size: number;
   rgba: ArrayBuffer;
   /** Second plane of a `compare` pair (right-hand / B side). */
   rgbaB?: ArrayBuffer;
   flags: ArrayBuffer;
+  /** False when a product on screen has no decoded FLAGS extension. */
+  flagsAvailable: boolean;
   stats: FrameStats;
   /** `per-frame` compare only: statistics of the B plane. */
   statsB?: FrameStats;
@@ -141,6 +147,8 @@ export interface ProbeResponse {
   requestId: number;
   value: number;
   flags: number;
+  /** False when this product has no decoded FLAGS extension. */
+  flagsAvailable: boolean;
   ra: number;
   dec: number;
   xArcsec: number;

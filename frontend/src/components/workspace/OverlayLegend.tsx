@@ -10,7 +10,10 @@ const LEGEND = [
   { symbol: 'diamond', color: '#38bdf8', key: 'legendGaia' as const },
   { symbol: 'ring', color: '#f59e0b', key: 'legendWise' as const },
   { symbol: 'path', color: '#f43f5e', key: 'legendNeo' as const },
-  { symbol: 'square', color: '#fbbf24', key: 'legendFlags' as const },
+  // Exact colours painted by imageMath.worker.ts, split by severity so a violet
+  // pixel ("unusable") is never confused with a yellow one ("caution").
+  { symbol: 'square', color: '#a855f7', key: 'legendFlagsUnusable' as const },
+  { symbol: 'square', color: '#facc15', key: 'legendFlagsCaution' as const },
 ];
 
 export default function OverlayLegend() {

@@ -71,11 +71,21 @@ export default function WorkspacePage() {
   const [nativeSampling, setNativeSampling] = useState(false);
   // SPHEREx samples the sky at 6.15"/pixel. Asking for that grid instead of a
   // fixed 480x480 avoids interpolating (and correlating) the data twice when
-  // the field is small.
-  const nativeShape = Math.max(
-    64,
-    Math.min(1024, Math.round((state.fov * 3600) / 6.15)),
-  );
+  // the field is small. The backend caps any request at 1024 pixels, so a wide
+  // field cannot actually reach the native scale: the button reports the grid
+  // that is really used instead of an aspirational 6.15".
+  const DISPLAY_SIZE = 480;
+  const rawNativeShape = (state.fov * 3600) / 6.15;
+  const nativeShape = Math.max(64, Math.min(1024, Math.round(rawNativeShape)));
+  const nativeClamped = rawNativeShape > 1024 || rawNativeShape < 64;
+  const activeShape = nativeSampling ? nativeShape : DISPLAY_SIZE;
+  const activeScaleArcsec = (state.fov * 3600) / activeShape;
+  const nativeLabel = `${activeShape}² · ${activeScaleArcsec.toFixed(2)}″`;
+  const nativeNotice = nativeSampling && nativeClamped
+    ? t.workspace.nativeSamplingClamped
+        .replace('{shape}', `${activeShape}²`)
+        .replace('{scale}', activeScaleArcsec.toFixed(2))
+    : null;
   const engine = useSkyEngine({
     ra: state.ra,
     dec: state.dec,
@@ -196,7 +206,17 @@ export default function WorkspacePage() {
     coaddMethod,
     compareScale,
     bandSelection.bandKey,
+    // A new display grid (native sampling) must re-request the frame: without
+    // this the viewport kept the previous 480² buffer for the new size.
+    frameSize,
   ]);
+
+  // Probe and selection are pixel coordinates on a specific grid: after a
+  // sampling change they would point at a different piece of sky.
+  useEffect(() => {
+    setSelection(null);
+    setProbe(null);
+  }, [frameSize]);
 
   /* ---------------------------------------------------------- overlays */
   // Gaia + NEOSSat answer in seconds, WISE is a slow all-sky TAP scan, so the
@@ -778,6 +798,7 @@ export default function WorkspacePage() {
                   fov={state.fov}
                   ready={ready}
                   rendering={rendering}
+                  gridLoading={engine.gridLoading}
                   status={engineStatus}
                   error={engineError}
                   channelNotice={
@@ -879,6 +900,8 @@ export default function WorkspacePage() {
                 showFlags={state.showFlags}
                 maskFlags={state.maskFlags}
                 nativeSampling={nativeSampling}
+                nativeLabel={nativeLabel}
+                nativeNotice={nativeNotice}
                 simple={state.ui === 'simple'}
                 onModeChange={changeMode}
                 onCoaddMethodChange={setCoaddMethod}

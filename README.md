@@ -79,7 +79,7 @@ math**, selected with `?ui=simple|advanced` and remembered in `localStorage`:
 - **Overlays** — real Gaia proper motions, WISE detections and CSA NEOSSat
   footprints from CADC (`s_region`, exposure windows, `target_moving`).
 - **Metadata** — MJD, exposure, detector, MJy/sr, σ, channel, wavelength and the
-  decoded FLAGS bitmask.
+  decoded FLAGS bitmask, split into unusable / caution / nominal classes.
 - **Bilingual EN / UA**, URL/iframe state, 3D spacecraft viewer.
 
 ## API
@@ -99,6 +99,24 @@ math**, selected with `?ui=simple|advanced` and remembered in `localStorage`:
 Pipeline: IRSA SIA2 → AWS Open Data FITS (HTTP Range) → astropy WCS/SIP
 resampling → FLAGS/VARIANCE/WAVE-TAB decoding → compact binary planes to the
 browser.
+
+## Data-quality flags
+
+`app/flags.py` (backend) and `src/lib/sky/flags.ts` (frontend) hold one table of
+the L2 `FLAGS` bits from the SPHEREx Explanatory Supplement, Table 16, and split
+them by severity:
+
+| Class | Bits | Meaning |
+| --- | --- | --- |
+| **unusable** | TRANSIENT, SUR_ERROR, NONFUNC, DICHROIC, MISSING_DATA, HOT, COLD, PHANMISS, NONLINEAR, PERSIST, CROSSTALK, GHOST, GHOST_FPA, GHOST_EXT, STREAK, BLOOM, SNOWBALL, HALO, SATELLITE_HALO | rejected by the L2 mosaic pipeline (§3.4.3) |
+| **caution** | OVERFLOW, OUTLIER | propagated warnings, not invalidations |
+| **nominal** | FULLSAMPLE, SOURCE | informational, never "contamination" |
+
+- Masks are resampled nearest-neighbour, images bilinearly.
+- The overlay is a blend, not a replacement: violet = unusable, yellow = caution.
+- Co-add leaves flagged samples out of the mean instead of averaging them in.
+- `flaggedFraction` is the share of *measured* pixels that carry a quality bit.
+- An unreadable `FLAGS` extension is reported as "unknown", never as "clean".
 
 ## Run
 
@@ -146,8 +164,17 @@ Set `VITE_API_BASE` in `frontend/.env` when the API uses another port.
 - A spectrum is aperture photometry, not a Tractor PSF fit; crowded fields show
   blended flux, and a complete 102-channel spectrum needs visits that cover
   every channel.
-- `FLAGS` bits 12 (`FULLSAMPLE`) and 21 (`SOURCE`) are nominal, not
-  contamination.
+- `FLAGS` is split by severity, not flattened into one "contamination" bit:
+  violet marks the L2 mosaic bad-pixel list (§3.4.3 of the Explanatory
+  Supplement), yellow marks the propagated warnings (`OVERFLOW`, `OUTLIER`).
+  The official photometry mask is narrower, so "unusable" is conservative.
+- Bits 12 (`FULLSAMPLE`) and 21 (`SOURCE`) are nominal, never "contamination".
+- Native sampling is a request: the backend caps every grid at 1024², so a field
+  wider than ~1.75° is undersampled. The control prints the grid and ″/px it
+  actually uses and shows a notice when the cap is hit.
+- The flag overlay marks the nearest input pixel, while the displayed value is a
+  bilinear blend of four input pixels: a sample next to a bad pixel can be
+  slightly diluted and still look clean.
 - The cache is local; clear `backend/cache/` to reclaim space.
 
 ## Licence

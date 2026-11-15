@@ -23,6 +23,10 @@ interface ImageMathControlsProps {
   showFlags: boolean;
   maskFlags: boolean;
   nativeSampling: boolean;
+  /** Real grid and scale in use, e.g. `293² · 6.15″`. */
+  nativeLabel: string;
+  /** Explains that the native grid hit the 1024² cap. */
+  nativeNotice?: string | null;
   /** Beginner surface: hide the technical toggles. */
   simple?: boolean;
   onModeChange: (mode: WorkspaceMode) => void;
@@ -57,6 +61,8 @@ export default function ImageMathControls({
   showFlags,
   maskFlags,
   nativeSampling,
+  nativeLabel,
+  nativeNotice = null,
   simple = false,
   onModeChange,
   onCoaddMethodChange,
@@ -311,8 +317,13 @@ export default function ImageMathControls({
               ].join(' ')}
             >
               <span>{t.workspace.nativeSampling}</span>
-              <span>{nativeSampling ? '6.15″' : '480²'}</span>
+              <span className="tabular-nums">{nativeLabel}</span>
             </button>
+            {nativeNotice && (
+              <p className="border border-warn/40 bg-warn/5 px-2 py-1.5 font-mono text-[8px] uppercase leading-relaxed tracking-[0.1em] text-warn">
+                {nativeNotice}
+              </p>
+            )}
           </>
         )}
       </div>

@@ -185,7 +185,7 @@ const en = {
     overlaysTitle: 'Multi-telescope overlays',
     overlaysBody:
       'Toggle ESA Gaia DR3 proper-motion vectors, WISE (AllWISE) detections and the real CSA NEOSSat frame footprints catalogued by CADC.',
-    metadataTitle: 'Metadata & contamination flags',
+    metadataTitle: 'Metadata & pixel quality',
     metadataBody:
       'Inspect MJD timestamps and the per-pixel bitmask: cosmic ray, saturation, diffraction spike, persistence, hot pixel.',
     spectrumTitle: 'On-the-fly spectrum',
@@ -253,8 +253,8 @@ const en = {
       'The archive did not answer (IRSA timeout or 502). This is an upstream outage, not an empty field — retry in a minute.',
     noDetectorData: 'This field has no product for the selected detector in any epoch.',
     aligningArrays: 'Aligning detector arrays',
-    flagsToggle: 'Contamination',
-    contaminationOverlay: 'Contamination bitmask overlay',
+    flagsToggle: 'Quality flags',
+    contaminationOverlay: 'Pixel quality-flag overlay',
     clickToProfile: 'Click a source to build its multi-visit spectrum',
     pixelValue: 'Surface brightness',
     flagsShort: 'flags',
@@ -272,10 +272,12 @@ const en = {
     channelOutside: 'outside the 102 channels',
     maskFlags: 'Mask flagged',
     maskFlagsHint:
-      'Hide pixels whose FLAGS carry a contamination bit instead of tinting them.',
+      'Hide pixels the FLAGS extension marks unusable or cautionary (excluding the informational FULLSAMPLE and SOURCE bits) instead of tinting them.',
     nativeSampling: 'Native sampling',
     nativeSamplingHint:
-      'Use the detector\'s own 6.15" pixels instead of the 480² display grid, so the viewport is not oversampled.',
+      'Sample the field at the detector\'s own 6.15" pixels instead of the 480² display grid. The request is capped at 1024², and the button always shows the grid and scale actually used.',
+    nativeSamplingClamped:
+      'Native grid capped at {shape} · {scale}″/px: at this field of view a 6.15″ grid would need more than 1024 pixels. The frame is undersampled, not oversampled.',
     bandStackHint:
       'A Level-2 frame is a spectral image: every row carries its own wavelength. Pick a channel to show only the pixels the mission assigns to it.',
     spectralImage: 'spectral image',
@@ -340,7 +342,8 @@ const en = {
     legendGaia: 'Gaia DR3 + 10-year PM',
     legendWise: 'WISE (AllWISE)',
     legendNeo: 'NEOSSat frame',
-    legendFlags: 'Contaminated pixel',
+    legendFlagsUnusable: 'Unusable pixel (FLAGS)',
+    legendFlagsCaution: 'Caution bit (FLAGS)',
     moversTitle: 'Movers & transients',
     moversBody:
       'Image-based peaks in the cleaned epoch difference: moving sources, variables and transients above 6σ, with static stars masked at 3σ and PSF-scale residuals smoothed away. Click a candidate to centre the aperture and extract its spectrum.',
@@ -363,9 +366,14 @@ const en = {
     offset: 'Sky offset',
     nearest: 'Nearest source',
     noSource: 'background',
-    flagsTitle: 'Contamination bitmask',
+    flagsTitle: 'Pixel quality flags (FLAGS)',
     nominalFlags: 'Nominal bits',
-    noFlags: 'clean pixel',
+    noFlags: 'clean pixel · no quality bit set',
+    flagSeverityUnusable: 'unusable',
+    flagSeverityCaution: 'caution',
+    flagUnknownBits: 'unknown bits {hex} — not in the published flag table',
+    flagsUnavailable:
+      'This product has no readable FLAGS extension: pixel quality is unknown, not clean.',
     probeHint: 'Hover the viewport to probe a pixel; click to extract its spectrum.',
     flagged: 'Flagged',
     sourceCard: 'Source card',
@@ -495,7 +503,8 @@ const en = {
     legendGaia: 'Gaia DR3 + 10-year proper motion',
     legendWise: 'WISE (AllWISE)',
     legendNeo: 'NEOSSat frame',
-    legendFlags: 'Contaminated pixel',
+    legendFlagsUnusable: 'Unusable pixel (FLAGS)',
+    legendFlagsCaution: 'Caution bit (FLAGS)',
 
     modesBody:
       'The workspace has two surfaces over the same real data. Simple mode hides controls, not information: every pixel it shows is a real calibrated SPHEREx plane, and its spectrum is the same multi-visit measurement as in advanced mode.',
@@ -515,7 +524,7 @@ const en = {
     modeAdvancedPoints: [
       'Official channel isolation: pick one of the 17 channels of a detector and the viewport keeps only the pixels the mission assigns to it (IRSA spectral_channels map).',
       'Per-pixel physics in the probe: surface brightness, σ from VARIANCE, S/N, channel index and WAVE-TAB wavelength.',
-      'Mask flagged pixels instead of tinting them, and use native 6.15″ sampling instead of the 480² display grid.',
+      'Mask flagged pixels instead of tinting them, and switch to native sampling — the button prints the grid and scale really used, including the 1024² cap at wide fields.',
       'Full spectrum readout: per-point flags, recentring offsets and a CSV with 13 columns.',
       'Molecular markers, channel availability inside the current cutout, and the "widen the field to 3.6°" helper.',
     ],
@@ -568,22 +577,22 @@ const en = {
         note: '6σ peaks in the cleaned epoch difference.',
       },
       {
-        name: 'Contamination overlay',
+        name: 'Quality-flag overlay',
         simple: true,
         advanced: true,
-        note: 'Tints pixels carrying a contamination bit.',
+        note: 'Violet = the L2 mosaic pipeline rejects the pixel, yellow = caution bits (OVERFLOW, OUTLIER); blended over the image, never replacing it.',
       },
       {
         name: 'Mask flagged pixels',
         simple: false,
         advanced: true,
-        note: 'Hides contaminated pixels entirely instead of tinting them.',
+        note: 'Hides unusable and cautionary pixels entirely; the informational FULLSAMPLE and SOURCE bits are never masked.',
       },
       {
-        name: 'Native 6.15″ sampling',
+        name: 'Native sampling',
         simple: false,
         advanced: true,
-        note: 'Avoids oversampling the detector on a fixed 480² grid.',
+        note: 'Uses the detector pixel scale instead of the 480² grid and prints the real grid and ″/px; capped at 1024², and a wide field says so.',
       },
       {
         name: 'URL state & iframe embed',
@@ -616,6 +625,9 @@ const en = {
     capabilityScanTitle: 'Movers & transients scan',
     capabilityScanBody:
       'A 6σ local-maximum peak finder on the cleaned epoch difference (3σ static-source mask, PSF-scale smoothing) lists movers, variables and transients; click one to centre the aperture and build its spectrum.',
+    capabilityFlagsTitle: 'Pixel quality flags',
+    capabilityFlagsBody:
+      'Every frame carries the real L2 FLAGS bitmask, sampled with the same WCS as the image. Bits are split by severity using the published recipes: violet marks pixels the mosaic pipeline rejects (TRANSIENT, SUR_ERROR, NONFUNC, DICHROIC, MISSING_DATA, HOT, COLD, PHANMISS, NONLINEAR, PERSIST, CROSSTALK, GHOST, STREAK, BLOOM, SNOWBALL, HALO, SATELLITE_HALO), yellow marks propagated warnings (OVERFLOW, OUTLIER), and FULLSAMPLE and SOURCE are reported as informational. The tint is blended, so a flagged source stays readable; masks are sampled nearest-neighbour, values bilinearly; the probe prints the raw hex mask, the decoded names and any bit missing from the table. A product without a readable FLAGS extension says "unknown", never "clean".',
 
     sourcesBody:
       'The browser never calls an archive directly: every catalogue query and FITS read is made by the local FastAPI backend, which then hands compact planes to the page.',
@@ -636,9 +648,9 @@ const en = {
     pipelineSteps: [
       'Discover — SIA2 asks IRSA for every SPHEREx spectral image covering the requested circle; the QR3 wide and deep collections answer today, and the DR1 entries are queried when that release is published.',
       'Fetch — the backend streams only the needed FITS windows from the AWS Open Data mirror over HTTP Range, about 2 MB per cutout instead of 62 MB.',
-      'Align — every epoch is resampled with its real SIP/WCS onto one tangent-plane grid, and the FLAGS bitmask and VARIANCE plane are decoded alongside.',
+      'Align — every epoch is resampled with its real SIP/WCS onto one tangent-plane grid; FLAGS are sampled nearest-neighbour (a mask is categorical) while the image and VARIANCE are interpolated bilinearly.',
       'Calibrate — the official spectral_channels product supplies the per-pixel channel index (0–18) and the authoritative 102-channel table (centre, edges, R, bandwidth); WAVE-TAB supplies a per-pixel wavelength grid.',
-      'Render — the Web Worker stretches the real MJy/sr planes, co-adds epochs, forms differences and masks everything outside the selected channel; only RGBA buffers reach the canvas.',
+      'Render — the Web Worker stretches the real MJy/sr planes, co-adds epochs (flagged samples are left out of the mean), forms differences and masks everything outside the selected channel; only RGBA buffers reach the canvas.',
       'Combine — the six-detector mean is a quick look (it mixes wavelengths); channel isolation always uses the official channel map, never an even split of the band.',
       'Measure — a click runs multi-visit aperture photometry: one spectral image per visit, 2×FWHM aperture, local annulus background, VARIANCE errors, flux in uJy.',
     ],
@@ -686,8 +698,8 @@ const en = {
       'play — 1 starts playback on load',
       'stretch — asinh | linear | sqrt | log',
       'gain — stretch gain, 0.5–40',
-      'flags — 1 to tint contaminated pixels',
-      'mask — 1 to hide contaminated pixels instead of tinting them',
+      'flags — 1 to tint pixels by FLAGS severity (violet unusable, yellow caution)',
+      'mask — 1 to hide flagged pixels instead of tinting them (advanced mode)',
       'ovl — comma-separated overlay list: grid, labels, gaia, wise, neossat, tracks',
     ],
     embedExampleTitle: 'Embed snippet',
@@ -721,6 +733,9 @@ const en = {
       'NEOSSat is a locator layer: CADC supplies the footprint polygon, exposure time and target_moving flag, not the NEOSSat pixels themselves.',
       'Coverage is uneven: RW Aurigae and R Draconis have no NEOSSat frame in CADC CAOM2, and the overlay panel says so instead of drawing one.',
       'If a field, epoch or detector has no product, the workspace reports it instead of showing an image.',
+      'Flag severity follows the published recipes: the violet class is the L2 mosaic bad-pixel list (§3.4.3 of the Explanatory Supplement); the yellow class holds OVERFLOW and OUTLIER, which the pipeline propagates rather than rejects. The official photometry mask is narrower than that, so "unusable" is a conservative label.',
+      'Native sampling is a request, not a promise: the backend caps every grid at 1024², so a field wider than ~1.75° is undersampled (the button prints the scale, and a notice appears).',
+      'The flag overlay marks the nearest input pixel; the displayed value is a bilinear blend of four input pixels, so a sample adjacent to a bad pixel can be slightly diluted while looking clean.',
     ],
     verifiedNote:
       'Verified against backend v2.0.0, spectral_channels_spx_cal-sch-v2-2026-229 and the QR3 collection, November 2026.',
@@ -944,7 +959,7 @@ const uk: Dictionary = {
     overlaysTitle: 'Накладання інших телескопів',
     overlaysBody:
       'Вмикайте вектори власного руху Gaia DR3, детекції WISE (AllWISE) та реальні полігони кадрів CSA NEOSSat із каталогу CADC.',
-    metadataTitle: 'Метадані та прапорці забруднення',
+    metadataTitle: 'Метадані та якість пікселів',
     metadataBody:
       'Переглядайте мітки часу MJD та бітову маску пікселя: космічний промінь, насичення, дифракційний сплеск, інерція, гарячий піксель.',
     spectrumTitle: 'Спектр на льоту',
@@ -1012,8 +1027,8 @@ const uk: Dictionary = {
       'Архів не відповів (таймаут IRSA або 502). Це збій на боці архіву, а не порожнє поле — повторіть за хвилину.',
     noDetectorData: 'Для цього поля немає продукту вибраної матриці в жодній епосі.',
     aligningArrays: 'Вирівнювання матриць детекторів',
-    flagsToggle: 'Забруднення',
-    contaminationOverlay: 'Накладання маски забруднення',
+    flagsToggle: 'Прапорці якості',
+    contaminationOverlay: 'Накладання прапорців якості пікселів',
     clickToProfile: 'Клацніть джерело, щоб побудувати мультивізитний спектр',
     pixelValue: 'Поверхнева яскравість',
     flagsShort: 'прапорці',
@@ -1031,10 +1046,12 @@ const uk: Dictionary = {
     channelOutside: 'поза 102 каналами',
     maskFlags: 'Маскувати прапорці',
     maskFlagsHint:
-      'Приховувати пікселі, у FLAGS яких стоїть біт забруднення, замість підсвічування.',
+      'Приховувати пікселі, які FLAGS позначає як непридатні або застережні (крім інформаційних FULLSAMPLE і SOURCE), замість підсвічування.',
     nativeSampling: 'Нативна вибірка',
     nativeSamplingHint:
-      'Використовувати власні пікселі детектора 6.15″ замість сітки 480², щоб не передискретизувати зображення.',
+      'Семплювати поле власними пікселями детектора 6.15″ замість сітки 480². Запит обмежений 1024², а кнопка завжди показує фактичну сітку й масштаб.',
+    nativeSamplingClamped:
+      'Нативну сітку обмежено до {shape} · {scale}″/пкс: для 6.15″ на цьому полі потрібно понад 1024 пікселів. Кадр недодискретизований, а не передискретизований.',
     bandStackHint:
       'Кадр рівня 2 — це спектральне зображення: кожен рядок має власну довжину хвилі. Виберіть канал, щоб показати лише ті пікселі, які місія віднесла до нього.',
     spectralImage: 'спектральне зображення',
@@ -1099,7 +1116,8 @@ const uk: Dictionary = {
     legendGaia: 'Gaia DR3 + власний рух за 10 років',
     legendWise: 'WISE (AllWISE)',
     legendNeo: 'Кадр NEOSSat',
-    legendFlags: 'Забруднений піксель',
+    legendFlagsUnusable: 'Непридатний піксель (FLAGS)',
+    legendFlagsCaution: 'Біт застереження (FLAGS)',
     moversTitle: 'Рухомі об’єкти й транзієнти',
     moversBody:
       'Піки в очищеній різниці епох: рухомі джерела, змінні та транзієнти вище 6σ, з маскою статичних зір на 3σ і згладженими залишками масштабу PSF. Клацніть кандидата, щоб відцентрувати апертуру й отримати спектр.',
@@ -1122,9 +1140,14 @@ const uk: Dictionary = {
     offset: 'Зсув на небі',
     nearest: 'Найближче джерело',
     noSource: 'фон',
-    flagsTitle: 'Бітова маска забруднення',
+    flagsTitle: 'Прапорці якості пікселя (FLAGS)',
     nominalFlags: 'Номінальні біти',
-    noFlags: 'чистий піксель',
+    noFlags: 'чистий піксель · жодного біта якості',
+    flagSeverityUnusable: 'непридатний',
+    flagSeverityCaution: 'застереження',
+    flagUnknownBits: 'невідомі біти {hex} — відсутні в опублікованій таблиці прапорців',
+    flagsUnavailable:
+      'У цьому продукті немає читабельного розширення FLAGS: якість пікселя невідома, а не чиста.',
     probeHint: 'Наведіть на вікно, щоб зчитати піксель; клацніть, щоб отримати спектр.',
     flagged: 'Забруднено',
     sourceCard: 'Картка джерела',
@@ -1254,7 +1277,8 @@ const uk: Dictionary = {
     legendGaia: 'Gaia DR3 + власний рух за 10 років',
     legendWise: 'WISE (AllWISE)',
     legendNeo: 'Кадр NEOSSat',
-    legendFlags: 'Забруднений піксель',
+    legendFlagsUnusable: 'Непридатний піксель (FLAGS)',
+    legendFlagsCaution: 'Біт застереження (FLAGS)',
 
     modesBody:
       'Робоче поле має дві поверхні над тими самими реальними даними. Простий режим ховає елементи керування, а не інформацію: кожен піксель, який він показує, — це реальна калібрована площина SPHEREx, а його спектр — те саме мультивізитне вимірювання, що й у розширеному режимі.',
@@ -1274,7 +1298,7 @@ const uk: Dictionary = {
     modeAdvancedPoints: [
       'Ізоляція офіційного каналу: виберіть один із 17 каналів детектора, і вікно лишить тільки ті пікселі, які місія віднесла до нього (карта IRSA spectral_channels).',
       'Фізика на рівні пікселя в пробі: поверхнева яскравість, σ з VARIANCE, S/N, індекс каналу та довжина хвилі WAVE-TAB.',
-      'Маскування пікселів із прапорцями замість підсвічування та нативна вибірка 6.15″ замість сітки 480².',
+      'Маскування пікселів із прапорцями замість підсвічування та нативна вибірка — кнопка показує фактичну сітку й масштаб, включно з обмеженням 1024² на широких полях.',
       'Повний вивід спектра: прапорці кожної точки, зсуви перецентрування та CSV із 13 колонок.',
       'Молекулярні маркери, доступність каналів у поточному кадрі та помічник «розширити поле до 3.6°».',
     ],
@@ -1327,22 +1351,23 @@ const uk: Dictionary = {
         note: 'Піки 6σ у очищеній різниці епох.',
       },
       {
-        name: 'Накладання забруднення',
+        name: 'Накладання прапорців якості',
         simple: true,
         advanced: true,
-        note: 'Підсвічує пікселі з бітом забруднення.',
+        note: 'Фіолетовий — піксель відкидає конвеєр мозаїки L2, жовтий — біти застереження (OVERFLOW, OUTLIER); накладається поверх зображення, не замінюючи його.',
       },
       {
         name: 'Маскувати прапорці',
         simple: false,
         advanced: true,
-        note: 'Повністю приховує забруднені пікселі замість підсвічування.',
+        note: 'Повністю приховує непридатні та застережні пікселі; інформаційні FULLSAMPLE і SOURCE ніколи не маскуються.',
       },
       {
-        name: 'Нативна вибірка 6.15″',
+        name: 'Нативна вибірка',
         simple: false,
         advanced: true,
-        note: 'Не передискретизує детектор на фіксованій сітці 480².',
+        note: 'Семплює в масштабі пікселя детектора замість сітки 480² і показує фактичну сітку та ″/пкс; обмежено 1024², і широке поле про це попереджає.',
+
       },
       {
         name: 'Стан URL та вбудовування iframe',
@@ -1375,6 +1400,9 @@ const uk: Dictionary = {
     capabilityScanTitle: 'Пошук рухомих об’єктів і транзієнтів',
     capabilityScanBody:
       'Пошук локальних максимумів на 6σ у очищеній різниці епох (маска статичних джерел на 3σ, згладжування масштабу PSF) дає список рухомих, змінних і транзієнтних джерел; клацніть кандидата, щоб відцентрувати апертуру й побудувати його спектр.',
+    capabilityFlagsTitle: 'Прапорці якості пікселів',
+    capabilityFlagsBody:
+      'Кожен кадр несе справжню бітмаску FLAGS рівня 2, семпловану за тим самим WCS, що й зображення. Біти розділено за опублікованими правилами: фіолетовий — пікселі, які конвеєр мозаїки відкидає (TRANSIENT, SUR_ERROR, NONFUNC, DICHROIC, MISSING_DATA, HOT, COLD, PHANMISS, NONLINEAR, PERSIST, CROSSTALK, GHOST, STREAK, BLOOM, SNOWBALL, HALO, SATELLITE_HALO); жовтий — поширені застереження (OVERFLOW, OUTLIER); FULLSAMPLE і SOURCE показуються як інформаційні. Накладання змішується з зображенням, тож позначене джерело лишається видимим; маска семплується найближчим сусідом, значення — білінійно; проба показує hex-маску, назви бітів і будь-який біт, якого немає в таблиці. Продукт без читабельного FLAGS прямо каже «невідомо», а не «чисто».',
 
     sourcesBody:
       'Браузер ніколи не звертається до архіву напряму: усі запити каталогів і читання FITS виконує локальний бекенд на FastAPI, а сторінка отримує вже компактні площини.',
@@ -1395,9 +1423,9 @@ const uk: Dictionary = {
     pipelineSteps: [
       'Пошук — SIA2 питає IRSA про всі спектральні зображення SPHEREx, що покривають задане коло; сьогодні відповідають колекції QR3 wide і deep, а записи DR1 запитуються, коли реліз з’явиться.',
       'Читання — бекенд вичитує з дзеркала AWS Open Data лише потрібні вікна FITS через HTTP Range: близько 2 МБ на виріз замість 62 МБ.',
-      'Вирівнювання — кожна епоха перепроєктується за своїм реальним SIP/WCS на спільну сітку, паралельно декодуються маска FLAGS і площина VARIANCE.',
+      'Вирівнювання — кожна епоха перепроєктується за своїм реальним SIP/WCS на спільну сітку; FLAGS семплується найближчим сусідом (маска категорична), а зображення й VARIANCE інтерполюються білінійно.',
       'Калібрування — офіційний продукт spectral_channels дає індекс каналу на піксель (0–18) і авторитетну таблицю 102 каналів (центр, межі, R, смуга); WAVE-TAB дає сітку довжин хвиль.',
-      'Рендеринг — Web Worker розтягує справжні площини MJy/sr, додає епохи, будує різниці й маскує все поза вибраним каналом; на полотно потрапляють лише RGBA-буфери.',
+      'Рендеринг — Web Worker розтягує справжні площини MJy/sr, додає епохи (позначені прапорцем зразки не входять у середнє), будує різниці й маскує все поза вибраним каналом; на полотно потрапляють лише RGBA-буфери.',
       'Комбінування — середнє шести детекторів це лише швидкий перегляд (воно змішує довжини хвиль); ізоляція каналу завжди йде за офіційною картою каналів.',
       'Вимірювання — клацання запускає мультивізитну апертурну фотометрію: одне спектральне зображення на візит, апертура 2×FWHM, локальне кільце, похибки з VARIANCE, потік у мкЯн.',
     ],
@@ -1445,8 +1473,8 @@ const uk: Dictionary = {
       'play — 1 запускає відтворення одразу після завантаження',
       'stretch — asinh | linear | sqrt | log',
       'gain — підсилення розтягу, 0,5–40',
-      'flags — 1, щоб підсвітити забруднені пікселі',
-      'mask — 1, щоб приховати забруднені пікселі замість підсвічування',
+      'flags — 1, щоб підсвітити пікселі за ступенем прапорців (фіолетовий — непридатний, жовтий — застереження)',
+      'mask — 1, щоб приховати позначені прапорцями пікселі замість підсвічування (розширений режим)',
       'ovl — список накладань через кому: grid, labels, gaia, wise, neossat, tracks',
     ],
     embedExampleTitle: 'Фрагмент для вбудовування',
@@ -1461,7 +1489,7 @@ const uk: Dictionary = {
       { keys: '← / →', action: 'Перейти на одну епоху або зсунути розділювач у режимі порівняння' },
       { keys: 'B / C / D', action: 'Режим миготіння, додавання або різниці' },
       { keys: 'V', action: 'Увімкнути або вимкнути порівняння «до/після»' },
-      { keys: 'F', action: 'Перемкнути накладання забруднення' },
+      { keys: 'F', action: 'Перемкнути накладання прапорців якості' },
       { keys: 'G / L', action: 'Перемкнути сітку неба або підписи джерел' },
       { keys: 'Esc', action: 'Очистити вибране джерело та спектр' },
       { keys: 'Колесо', action: 'Прокручувати панелі робочого поля' },
@@ -1480,6 +1508,9 @@ const uk: Dictionary = {
       'NEOSSat — це шар-локатор: CADC дає полігон покриття, час експозиції та прапорець target_moving, а не самі пікселі NEOSSat.',
       'Покриття нерівномірне: для RW Aurigae і R Draconis у CADC CAOM2 немає жодного кадру NEOSSat, і панель прямо це показує.',
       'Якщо для поля, епохи або детектора немає продукту, робоче поле повідомляє про це замість зображення.',
+      'Ступінь прапорців відповідає опублікованим правилам: фіолетовий клас — список поганих пікселів мозаїки L2 (§3.4.3 Explanatory Supplement); жовтий клас — OVERFLOW і OUTLIER, які конвеєр поширює, а не відкидає. Офіційна фотометрична маска вужча, тож позначка «непридатний» — консервативна.',
+      'Нативна вибірка — це запит, а не гарантія: бекенд обмежує будь-яку сітку 1024², тому поле ширше за ~1,75° виходить недодискретизованим (кнопка показує масштаб, і з’являється попередження).',
+      'Накладання прапорців позначає найближчий вхідний піксель; показане значення — білінійне змішування чотирьох вхідних пікселів, тож зразок поряд із поганим пікселем може бути трохи «розбавлений», виглядаючи чистим.',
     ],
     verifiedNote:
       'Перевірено проти бекенда v2.0.0, spectral_channels_spx_cal-sch-v2-2026-229 і колекції QR3, листопад 2026.',

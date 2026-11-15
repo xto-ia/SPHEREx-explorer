@@ -24,7 +24,7 @@ import type {
   WorkerRequest,
   WorkerResponse,
 } from '../lib/sky/workerTypes';
-import { CONTAMINATION_MASK } from '../lib/sky/flags';
+import { CONTAMINATION_MASK, UNUSABLE_MASK } from '../lib/sky/flags';
 import { APP_CONFIG } from '../config/app.config';
 
 interface StoredFrame {
@@ -32,6 +32,8 @@ interface StoredFrame {
   mjd: number;
   image: Float32Array;
   flags: Uint32Array;
+  /** False when the product ships no readable FLAGS extension. */
+  hasFlags: boolean;
   variance: Float32Array | null;
 }
 
@@ -58,6 +60,20 @@ function parseHexColor(hex: string): [number, number, number] {
 
 /** Display tint for normal (non-difference) frames, from the central config. */
 const FRAME_TINT = parseHexColor(APP_CONFIG.render.frameColor);
+
+/**
+ * Quality-flag overlay colours.
+ *
+ * Violet marks pixels the L2 mosaic pipeline rejects (unusable); yellow marks
+ * pixels it merely flags as a caution (OVERFLOW, OUTLIER). Both are real
+ * per-pixel FLAGS bits — nothing here is inferred from the pixel value — and
+ * both are distinct from the catalogue colours: amber WISE rings, sky-blue
+ * Gaia diamonds and rose NEOSSat footprints.
+ */
+const UNUSABLE_RGB: [number, number, number] = [168, 85, 247];
+const CAUTION_RGB: [number, number, number] = [250, 204, 21];
+const UNUSABLE_ALPHA = 0.72;
+const CAUTION_ALPHA = 0.45;
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -139,7 +155,8 @@ function computeStats(pixels: Float32Array, flags: Uint32Array | null): FrameSta
   let flagged = 0;
   for (let i = 0; i < pixels.length; i += 1) {
     const value = pixels[i];
-    if (Number.isFinite(value)) finite.push(value);
+    if (!Number.isFinite(value)) continue;
+    finite.push(value);
     if (flags && (flags[i] & CONTAMINATION_MASK) !== 0) flagged += 1;
   }
   const sorted = Float32Array.from(finite).sort();
@@ -148,10 +165,25 @@ function computeStats(pixels: Float32Array, flags: Uint32Array | null): FrameSta
     median: percentile(sorted, 0.5),
     p99: percentile(sorted, 0.99),
     noise: Math.max((percentile(sorted, 0.84) - percentile(sorted, 0.16)) / 2, 1e-6),
-    flaggedFraction: pixels.length ? flagged / pixels.length : 0,
+    // Of the pixels that carry a value; a NaN (outside the footprint or
+    // masked by the channel map) is neither flagged nor clean.
+    flaggedFraction: finite.length ? flagged / finite.length : 0,
     min: sorted.length ? sorted[0] : 0,
     max: sorted.length ? sorted[sorted.length - 1] : 0,
   };
+}
+
+/** Share of the *measured* pixels that carry a quality bit. */
+function flaggedFraction(pixels: Float32Array, flags: Uint32Array | null): number {
+  if (!flags) return 0;
+  let finite = 0;
+  let flagged = 0;
+  for (let i = 0; i < pixels.length; i += 1) {
+    if (!Number.isFinite(pixels[i])) continue;
+    finite += 1;
+    if ((flags[i] & CONTAMINATION_MASK) !== 0) flagged += 1;
+  }
+  return finite ? flagged / finite : 0;
 }
 
 /**
@@ -197,6 +229,34 @@ function stretchValue(value: number, mode: string, gain: number, low: number, hi
   }
 }
 
+/** Severity tint for one pixel, or null when the mask carries no quality bit. */
+function flagTint(
+  flags: Uint32Array | null,
+  index: number,
+): { rgb: [number, number, number]; alpha: number } | null {
+  if (!flags) return null;
+  const value = flags[index];
+  if ((value & UNUSABLE_MASK) !== 0) return { rgb: UNUSABLE_RGB, alpha: UNUSABLE_ALPHA };
+  if ((value & CONTAMINATION_MASK) !== 0) return { rgb: CAUTION_RGB, alpha: CAUTION_ALPHA };
+  return null;
+}
+
+/**
+ * Pull the rendered colour towards the flag colour *without* erasing it: a
+ * contaminated but genuinely bright source must stay readable under the
+ * overlay, so the tint is a blend, not a replacement.
+ */
+function blendTint(
+  rgba: Uint8ClampedArray,
+  offset: number,
+  rgb: [number, number, number],
+  alpha: number,
+): void {
+  rgba[offset] = Math.round(rgba[offset] * (1 - alpha) + rgb[0] * alpha);
+  rgba[offset + 1] = Math.round(rgba[offset + 1] * (1 - alpha) + rgb[1] * alpha);
+  rgba[offset + 2] = Math.round(rgba[offset + 2] * (1 - alpha) + rgb[2] * alpha);
+}
+
 function toRgba(
   pixels: Float32Array,
   flags: Uint32Array | null,
@@ -217,6 +277,7 @@ function toRgba(
       rgba[offset + 3] = 0;
       continue;
     }
+    const tint = stretch.showFlags ? flagTint(flags, i) : null;
     if (signed) {
       const delta = value - median;
       if (Math.abs(delta) < threshold) {
@@ -234,6 +295,9 @@ function toRgba(
         rgba[offset + 2] = 248;
       }
       rgba[offset + 3] = Math.round(50 + 205 * strength);
+      // The difference view honours the same toggle as every other mode: a
+      // flagged pixel is still flagged inside a subtracted frame.
+      if (tint) blendTint(rgba, offset, tint.rgb, tint.alpha);
       continue;
     }
     const level = Math.round(255 * stretchValue(value, stretch.stretch, stretch.gain, stats.p1, stats.p99));
@@ -243,12 +307,7 @@ function toRgba(
     rgba[offset + 1] = Math.round((level * FRAME_TINT[1]) / 255);
     rgba[offset + 2] = Math.round((level * FRAME_TINT[2]) / 255);
     rgba[offset + 3] = 255;
-    if (stretch.showFlags && flags && (flags[i] & CONTAMINATION_MASK) !== 0) {
-      rgba[offset] = 245;
-      rgba[offset + 1] = 158;
-      rgba[offset + 2] = 11;
-      rgba[offset + 3] = 255;
-    }
+    if (tint) blendTint(rgba, offset, tint.rgb, tint.alpha);
   }
   return rgba;
 }
@@ -261,11 +320,16 @@ function coadd(method: 'sum' | 'mean'): { pixels: Float32Array; flags: Uint32Arr
   for (const frame of frames.values()) {
     for (let i = 0; i < out.length; i += 1) {
       const value = frame.image[i];
-      if (Number.isFinite(value)) {
+      const contaminated = frame.hasFlags && (frame.flags[i] & CONTAMINATION_MASK) !== 0;
+      // A pixel the mission flags unusable or cautionary is excluded from the
+      // combination instead of quietly lowering the mean. If every epoch is
+      // flagged, the co-add leaves the pixel empty (transparent) rather than
+      // inventing a value from bad samples.
+      if (Number.isFinite(value) && !contaminated) {
         out[i] += value;
         counts[i] += 1;
       }
-      union[i] |= frame.flags[i];
+      if (frame.hasFlags) union[i] |= frame.flags[i];
     }
   }
   if (method === 'mean') {
@@ -465,6 +529,7 @@ function handleFrameData(message: EpochFrameMessage) {
     mjd: message.mjd,
     image: message.image,
     flags: message.flags ?? new Uint32Array(size * size),
+    hasFlags: Boolean(message.flags),
     variance: message.variance,
   });
   if (message.channel && message.channel.length) channelPlane = message.channel;
@@ -472,6 +537,15 @@ function handleFrameData(message: EpochFrameMessage) {
     wavelengthGrid = message.wavelength;
     wavelengthShape = message.lambdaShape;
   }
+}
+
+/** True only when every plane on screen carries a decoded FLAGS extension. */
+function flagsAvailable(epochs: Array<number | undefined>): boolean {
+  for (const epoch of epochs) {
+    const frame = epoch === undefined ? undefined : frames.get(epoch);
+    if (frame && !frame.hasFlags) return false;
+  }
+  return true;
 }
 
 function handleDisplay(message: DisplayWorkerRequest) {
@@ -493,17 +567,26 @@ function handleDisplay(message: DisplayWorkerRequest) {
     const pixelsB = restrictToChannel(second.image, second.flags, request);
     const perFrame = request.compareScale === 'per-frame';
     const shared = perFrame ? null : computeStatsPair([pixelsA, pixelsB]);
-    const statsA = shared ?? computeStats(pixelsA, first.flags);
-    const statsB = shared ?? computeStats(pixelsB, second.flags);
+    // A shared stretch must not share the quality statistic: each half keeps
+    // the flagged share of its own epoch.
+    const statsA = { ...(shared ?? computeStats(pixelsA, first.flags)) };
+    const statsB = { ...(shared ?? computeStats(pixelsB, second.flags)) };
+    // Share of *measured* pixels with a quality bit, taken before masking.
+    const measuredA = restrictToChannel(first.image, first.flags, { ...request, maskFlags: false });
+    const measuredB = restrictToChannel(second.image, second.flags, { ...request, maskFlags: false });
+    statsA.flaggedFraction = flaggedFraction(measuredA, first.flags);
+    statsB.flaggedFraction = flaggedFraction(measuredB, second.flags);
     const rgbaA = toRgba(pixelsA, first.flags, statsA, request.stretch);
     const rgbaB = toRgba(pixelsB, second.flags, statsB, request.stretch);
     const flags = first.flags.buffer.slice(0) as ArrayBuffer;
     const response: FrameResponse = {
       type: 'frame',
       requestId: message.requestId,
+      size,
       rgba: rgbaA.buffer as ArrayBuffer,
       rgbaB: rgbaB.buffer as ArrayBuffer,
       flags,
+      flagsAvailable: flagsAvailable([request.epochA, request.epochB]),
       stats: statsA,
       statsB: perFrame ? statsB : undefined,
       epochIndex: request.epochA,
@@ -526,14 +609,14 @@ function handleDisplay(message: DisplayWorkerRequest) {
     const frame = frames.get(request.epochIndex);
     if (!frame) throw new Error('epoch not loaded');
     pixels = frame.image;
-    flags = frame.flags;
+    flags = frame.hasFlags ? frame.flags : null;
     mjd = frame.mjd;
   } else if (request.mode === 'coadd') {
     const combined = coadd(request.coaddMethod);
     pixels = combined.pixels;
     flags = combined.flags;
     epochIndex = -1;
-    label = `${bandLabel} · ${request.coaddMethod === 'mean' ? 'mean' : 'sum'}`;
+    label = `${bandLabel} · ${request.coaddMethod === 'mean' ? 'mean' : 'sum'} · flags excluded`;
     mjd = [...frames.values()].reduce((sum, frame) => sum + frame.mjd, 0) / Math.max(frames.size, 1);
   } else {
     const combined = difference(request.epochA, request.epochB);
@@ -549,13 +632,25 @@ function handleDisplay(message: DisplayWorkerRequest) {
 
   pixels = restrictToChannel(pixels, flags, request);
   if (request.channel) label = `${label} · ch ${request.channel}`;
+  // The quality statistic describes the measured pixels, so it is taken before
+  // "Mask flagged" removes them (otherwise masking would always report 0 %).
+  const measured = request.maskFlags ? restrictToChannel(pixels, flags, { ...request, maskFlags: false }) : pixels;
   const stats = computeStats(pixels, flags);
+  stats.flaggedFraction = flaggedFraction(measured, flags);
   const rgba = toRgba(pixels, flags, stats, request.stretch);
+  const available =
+    request.mode === 'coadd'
+      ? flagsAvailable([...frames.keys()])
+      : request.mode === 'diff'
+        ? flagsAvailable([request.epochA, request.epochB])
+        : flagsAvailable([request.epochIndex]);
   const response: FrameResponse = {
     type: 'frame',
     requestId: message.requestId,
+    size,
     rgba: rgba.buffer as ArrayBuffer,
-    flags: flags.buffer.slice(0) as ArrayBuffer,
+    flags: (flags ?? new Uint32Array(size * size)).buffer.slice(0) as ArrayBuffer,
+    flagsAvailable: available,
     stats,
     epochIndex,
     epochA,
@@ -584,7 +679,8 @@ function handleProbe(message: ProbeWorkerRequest) {
     type: 'probe',
     requestId: message.requestId,
     value: Number.isFinite(frame.image[index]) ? frame.image[index] : Number.NaN,
-    flags: frame.flags[index] ?? 0,
+    flags: frame.hasFlags ? frame.flags[index] ?? 0 : 0,
+    flagsAvailable: frame.hasFlags,
     ra: sky.ra,
     dec: sky.dec,
     xArcsec: sky.xArcsec,

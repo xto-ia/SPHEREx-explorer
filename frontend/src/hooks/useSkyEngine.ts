@@ -17,6 +17,10 @@ export interface SkyFrame {
   /** Right-hand plane of a `compare` pair; undefined in every other mode. */
   rgbaB?: Uint8ClampedArray;
   flags: Uint8Array;
+  /** Display grid this frame was computed on; `rgba.length` must match it. */
+  size: number;
+  /** False when a product on screen has no decoded FLAGS extension. */
+  flagsAvailable: boolean;
   stats: FrameResponse['stats'];
   /** `per-frame` compare only: statistics of the B plane. */
   statsB?: FrameStats;
@@ -39,10 +43,13 @@ export interface SkyEngine {
   frame: SkyFrame | null;
   ready: boolean;
   rendering: boolean;
+  /** A new display grid is being downloaded; the viewport has no frame yet. */
+  gridLoading: boolean;
   status: string | null;
   error: string | null;
   size: number;
   loadedCount: number;
+  flagsAvailable: boolean;
   /** Channels (1-17) that actually occur in the current cutout. */
   availableChannels: number[];
   /** Detector-native pixel scale and the grid size that matches it. */
@@ -95,6 +102,8 @@ export function useSkyEngine(options: {
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [frame, setFrame] = useState<SkyFrame | null>(null);
   const [ready, setReady] = useState(false);
+  const [gridLoading, setGridLoading] = useState(false);
+  const [flagsAvailable, setFlagsAvailable] = useState(true);
   const [loadedCount, setLoadedCount] = useState(0);
   const [rendering, setRendering] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -102,6 +111,11 @@ export function useSkyEngine(options: {
   const [availableChannels, setAvailableChannels] = useState<number[]>([]);
   const [pixelScaleArcsec, setPixelScaleArcsec] = useState(6.15);
   const [nativeShape, setNativeShape] = useState(FRAME_SIZE);
+
+  // The worker compares responses against the grid the UI currently draws, so
+  // the size must be readable from the long-lived message handler.
+  const sizeRef = useRef(shape);
+  sizeRef.current = shape;
 
   // The band label is stable per detector; the selected channel changes on
   // every click and must not reload the frames, so the load effect reads it
@@ -133,12 +147,17 @@ export function useSkyEngine(options: {
       }
       if (message.type === 'frame') {
         if (message.requestId !== displayRef.current) return;
+        // A response computed on the previous grid must never be painted at the
+        // new one: the RGBA buffer length would not match the canvas.
+        if (message.size !== sizeRef.current) return;
         setRendering(false);
         setError(null);
         setFrame({
           rgba: new Uint8ClampedArray(message.rgba),
           rgbaB: message.rgbaB ? new Uint8ClampedArray(message.rgbaB) : undefined,
           flags: new Uint8Array(message.flags),
+          size: message.size,
+          flagsAvailable: message.flagsAvailable,
           stats: message.stats,
           statsB: message.statsB,
           epochIndex: message.epochIndex,
@@ -263,6 +282,15 @@ export function useSkyEngine(options: {
     }
 
     loadedEpochsRef.current.clear();
+    // The old frame belongs to the previous grid: drop it so the viewport can
+    // never paint a 480² buffer at native-sampling dimensions (and never show
+    // stale pixels as if they were the new sampling).
+    pendingDisplayRef.current = null;
+    setFrame(null);
+    setLoadedCount(0);
+    setGridLoading(true);
+    setError(null);
+    setFlagsAvailable(true);
     post({
       type: 'load',
       size: shape,
@@ -308,6 +336,9 @@ export function useSkyEngine(options: {
         setAvailableChannels(present);
         setPixelScaleArcsec(plane.pixelScaleArcsec || 6.15);
         setNativeShape(plane.nativeShape || FRAME_SIZE);
+        // An unreadable FLAGS extension must surface as "unknown", never as
+        // "everything is clean".
+        if (!plane.hasFlags) setFlagsAvailable(false);
       }
       post(
         {
@@ -316,6 +347,7 @@ export function useSkyEngine(options: {
           mjd: plane.mjd ?? 0,
           image: plane.image,
           flags: plane.flags,
+          hasFlags: plane.hasFlags,
           variance: plane.variance,
           channel: firstFrame ? plane.channel : new Uint8Array(0),
           wavelength: firstFrame ? plane.wavelength : new Float32Array(0),
@@ -332,6 +364,7 @@ export function useSkyEngine(options: {
       loadedEpochsRef.current.add(epochIndex);
       setLoadedCount((count) => count + 1);
       completed += 1;
+      if (firstFrame) setGridLoading(false);
       setStatus(completed < wanted.length ? `loading ${completed}/${wanted.length} epochs` : null);
     };
 
@@ -433,6 +466,8 @@ export function useSkyEngine(options: {
     frame,
     ready,
     rendering,
+    gridLoading,
+    flagsAvailable,
     status,
     error,
     size: shape,

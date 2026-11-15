@@ -35,6 +35,7 @@ from .cache import cache
 from .channels import channel_at_pixels, channel_for_wavelength, channel_rows
 from .channels_data import CHANNELS
 from .config import SIA_COLLECTIONS
+from .flags import CONTAMINATION_MASK, UNUSABLE_MASK, describe as describe_flags
 from .images import (
     pixel_solid_angle,
     product_meta,
@@ -59,7 +60,8 @@ ANNULUS_OUTER_FWHM = 10.0
 DEFAULT_MAX_PRODUCTS = 96
 HARD_MAX_PRODUCTS = 900
 SPECTRUM_CACHE_TTL = 30 * 24 * 60 * 60
-CONTAMINATION_MASK = 0x1F  # same "do not trust this pixel" bits the worker tints
+# CONTAMINATION_MASK comes from app/flags.py, the same table the browser tints
+# with, so the plot and the viewport can never disagree about a pixel.
 
 _CHANNEL_BY_INDEX = {
     (row[0] - 1) * 17 + row[1]: row for row in CHANNELS
@@ -224,6 +226,8 @@ def _photometry(
 
     flags = 0
     flag_fraction = 0.0
+    unusable_fraction = 0.0
+    flags_available = False
     if flags_requested:
         try:
             flag_window = read_flags_window(url, y0, y1, x0, x1)
@@ -231,9 +235,13 @@ def _photometry(
             if ap_flags.size:
                 flags = int(np.bitwise_or.reduce(ap_flags))
                 flag_fraction = float(np.mean((ap_flags & CONTAMINATION_MASK) != 0))
-        except Exception:  # noqa: BLE001 - flags are metadata
+                unusable_fraction = float(np.mean((ap_flags & UNUSABLE_MASK) != 0))
+                flags_available = True
+        except Exception:  # noqa: BLE001 - an unreadable mask is "unknown", not "clean"
             flags = 0
             flag_fraction = 0.0
+            unusable_fraction = 0.0
+            flags_available = False
 
     channel_values = channel_at_pixels(
         np.array([centred_x]), np.array([centred_y]), (naxis2, naxis1)
@@ -274,6 +282,9 @@ def _photometry(
         "recentred": recentred,
         "flags": flags,
         "flagFraction": flag_fraction,
+        "unusableFraction": unusable_fraction,
+        "flagsAvailable": flags_available,
+        "flagNames": describe_flags(flags),
         "solidAngleSr": solid_angle,
     }
 
@@ -443,9 +454,12 @@ def spectrum(
         "npix": column("npix"),
         "exptime": column("exptime"),
         "flags": column("flags"),
+        "flagsAvailable": column("flagsAvailable"),
+        "flagNames": column("flagNames"),
         "offsetArcsec": column("offsetArcsec"),
         "recentred": column("recentred"),
         "flagFraction": [round(item["flagFraction"], 4) for item in measurements],
+        "unusableFraction": [round(item["unusableFraction"], 4) for item in measurements],
         "snr": [
             round(item["flux"] / item["fluxErr"], 3)
             if item["fluxErr"] and math.isfinite(item["fluxErr"]) and item["fluxErr"] > 0

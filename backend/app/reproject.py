@@ -118,7 +118,7 @@ def sample_product(
     if not inside.any():
         return {
             "image": np.full((shape, shape), np.nan, dtype=np.float32),
-            "flags": np.zeros((shape, shape), dtype=np.uint32) if want_flags else None,
+            "flags": None,
             "variance": np.full((shape, shape), np.nan, dtype=np.float32) if want_variance else None,
             "channel": np.zeros((shape, shape), dtype=np.uint8),
             "wavelength": np.full((lambda_size, lambda_size), np.nan, dtype=np.float32),
@@ -140,8 +140,8 @@ def sample_product(
             flag_window = read_flags_window(url, y0, y1, x0, x1)
             flags = _nearest(flag_window, px - x0, py - y0).astype(np.uint32)
             flags = np.where(coverage, flags, 0)
-        except Exception:  # noqa: BLE001 - flags are optional metadata
-            flags = np.zeros((shape, shape), dtype=np.uint32)
+        except Exception:  # noqa: BLE001 - an unreadable mask must not look clean
+            flags = None
 
     variance = None
     if want_variance:

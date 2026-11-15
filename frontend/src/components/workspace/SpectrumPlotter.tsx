@@ -103,7 +103,7 @@ export default function SpectrumPlotter({
           point.mjd,
           point.obsId,
           point.npix,
-          point.flags,
+          point.flagsAvailable === false ? '' : point.flags,
           point.offsetArcsec ?? '',
         ].join(','),
       )

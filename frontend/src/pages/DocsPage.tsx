@@ -22,7 +22,8 @@ const OVERLAY_LEGEND = [
   { key: 'legendGaia', shape: 'diamond', color: '#38bdf8' },
   { key: 'legendWise', shape: 'ring', color: '#f59e0b' },
   { key: 'legendNeo', shape: 'line', color: '#f43f5e' },
-  { key: 'legendFlags', shape: 'square', color: '#fbbf24' },
+  { key: 'legendFlagsUnusable', shape: 'square', color: '#a855f7' },
+  { key: 'legendFlagsCaution', shape: 'square', color: '#facc15' },
 ] as const;
 
 /** Official per-detector coverage, from IRSA spectral_channels_spx_cal-sch-v2. */
@@ -78,6 +79,7 @@ export default function DocsPage() {
     { title: t.docs.capabilitySpectrumTitle, body: t.docs.capabilitySpectrumBody, tag: '04' },
     { title: t.docs.capabilityScanTitle, body: t.docs.capabilityScanBody, tag: '05' },
     { title: t.docs.capabilityCompareTitle, body: t.docs.capabilityCompareBody, tag: '06' },
+    { title: t.docs.capabilityFlagsTitle, body: t.docs.capabilityFlagsBody, tag: '07' },
   ];
 
   const sources = [

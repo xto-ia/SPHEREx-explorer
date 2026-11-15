@@ -82,7 +82,13 @@ export interface SpectrumPoint {
   npix: number;
   exptime: number;
   flags: number;
+  /** False when the product had no readable FLAGS extension for this visit. */
+  flagsAvailable?: boolean;
+  /** Decoded names of the aperture mask, with their severity class. */
+  flagNames?: Array<{ bit: number; name: string; severity: 'unusable' | 'caution' | 'nominal' }>;
   flagFraction: number;
+  /** Share of aperture pixels the L2 mosaic pipeline rejects. */
+  unusableFraction?: number;
   offsetArcsec: number | null;
   recentred: boolean;
   snr: number | null;
