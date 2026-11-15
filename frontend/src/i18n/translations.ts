@@ -112,30 +112,6 @@ const en = {
     intakeDocHint: 'Coordinate formats, field-of-view sizes and the workflow live in the documentation.',
     intakeDocLink: 'Read the guide',
 
-    spectralKicker: 'SPECTROSCOPY',
-    spectralTitle: 'A spectrum from many visits',
-    spectralBody:
-      'A Level-2 frame measures each sky position in one spectral channel; the survey revisits every position in all 102 channels. Clicking a source measures it in each visit and plots flux against wavelength, with the molecular features that drive brown-dwarf, disk and AGB classification.',
-    spectralLines: [
-      'H₂O 1.13 µm',
-      'H₂O 1.40 µm',
-      'CO 1.56 µm',
-      'CH₄ 1.65 µm',
-      'CO₂ 2.00 µm',
-      'CO 2.30 µm',
-      'H₂O ice 3.05 µm',
-      'PAH 3.30 µm',
-      'CO₂ 4.26 µm',
-      'CO 4.60 µm',
-    ],
-    spectralLinesTitle: 'Diagnostic bands',
-
-    statsScientific: 'Near-infrared bands',
-    statsCadence: 'All-sky survey cadence',
-    statsCadenceValue: '6 months',
-    statsArrays: 'Detector arrays',
-    statsAccess: 'Open to everyone',
-
     missionKicker: 'THE MISSION',
     missionTitle: 'A spectral map of the entire sky',
     missionSubtitle:
@@ -151,7 +127,7 @@ const en = {
       'Stacking the 17 bands of each array boosts the signal-to-noise ratio by about 4×, so faint movers become visible.',
     cardDiscoveryTitle: 'Discovery for everyone',
     cardDiscoveryBody:
-      'Blink, co-add and difference imaging turn raw survey frames into something any volunteer can explore from a laptop.',
+      'Public archive data lets anyone contribute to science — no observatory required.',
 
     challengeKicker: 'THE CHALLENGE',
     challengeTitle: 'Built for NASA Space Apps',
@@ -846,30 +822,6 @@ const uk: Dictionary = {
     intakeDocHint: 'Формати координат, розміри поля зору та робочий процес — у документації.',
     intakeDocLink: 'Читати посібник',
 
-    spectralKicker: 'СПЕКТРОСКОПІЯ',
-    spectralTitle: 'Спектр із багатьох візитів',
-    spectralBody:
-      'Кадр рівня 2 вимірює кожну позицію неба в одному спектральному каналі; огляд повторно відвідує кожну позицію в усіх 102 каналах. Клацання джерела вимірює його в кожному візиті й будує потік проти довжини хвилі з молекулярними смугами, за якими класифікують коричневі карлики, диски та AGB-зорі.',
-    spectralLines: [
-      'H₂O 1,13 мкм',
-      'H₂O 1,40 мкм',
-      'CO 1,56 мкм',
-      'CH₄ 1,65 мкм',
-      'CO₂ 2,00 мкм',
-      'CO 2,30 мкм',
-      'Лід H₂O 3,05 мкм',
-      'ПАУ 3,30 мкм',
-      'CO₂ 4,26 мкм',
-      'CO 4,60 мкм',
-    ],
-    spectralLinesTitle: 'Діагностичні смуги',
-
-    statsScientific: 'Інфрачервоні канали',
-    statsCadence: 'Цикл огляду всього неба',
-    statsCadenceValue: '6 місяців',
-    statsArrays: 'Матриці детекторів',
-    statsAccess: 'Відкрито для всіх',
-
     missionKicker: 'МІСІЯ',
     missionTitle: 'Спектральна карта всього неба',
     missionSubtitle:
@@ -885,7 +837,7 @@ const uk: Dictionary = {
       'Сума 17 каналів кожної матриці підвищує співвідношення сигнал/шум приблизно вчетверо, і слабкі об’єкти стають видимими.',
     cardDiscoveryTitle: 'Відкриття для кожного',
     cardDiscoveryBody:
-      'Миготіння, додавання та віднімання зображень перетворюють сирі кадри огляду на матеріал, який досліджує будь-хто з ноутбука.',
+      'Публічні архівні дані дозволяють кожному долучитися до науки — без власної обсерваторії.',
 
     challengeKicker: 'ЗАВДАННЯ',
     challengeTitle: 'Створено для NASA Space Apps',

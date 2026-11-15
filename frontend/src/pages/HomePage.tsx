@@ -64,37 +64,9 @@ export default function HomePage() {
         <SpherexModelCanvas className="lg:aspect-auto lg:h-[calc(100dvh_-_7rem)] lg:max-h-[52rem]" />
       </section>
 
-      {/* ------------------------------------------- Mission stats band */}
-      <section className="mt-10">
-        <dl className="grid grid-cols-2 border border-line bg-black/25 sm:grid-cols-4">
-          {[
-            { value: '102', label: t.home.statsScientific },
-            { value: t.home.statsCadenceValue, label: t.home.statsCadence },
-            { value: '6', label: t.home.statsArrays },
-            { value: '∞', label: t.home.statsAccess },
-          ].map((stat, index) => (
-            <div
-              key={stat.label}
-              className={[
-                'px-4 py-3',
-                index !== 0 ? 'border-l border-line' : '',
-                index >= 2 ? 'border-t border-line sm:border-t-0' : '',
-              ].join(' ')}
-            >
-              <dt className="whitespace-nowrap font-mono text-base font-semibold text-zinc-100">
-                {stat.value}
-              </dt>
-              <dd className="mt-0.5 font-mono text-[9px] uppercase leading-tight tracking-[0.14em] text-zinc-500">
-                {stat.label}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      {/* ------------------------------------------------------- Coordinate form */}
-      <section className="mt-14">
-        <div className="mx-auto w-full max-w-5xl">
+      {/* ------------------- Coordinate intake + mission overview (side by side on 1440px+) */}
+      <section className="mt-14 grid grid-cols-1 gap-10 min-[1440px]:grid-cols-[minmax(0,1.04fr)_minmax(0,1fr)] min-[1440px]:items-start">
+        <div className="min-w-0">
           <CoordinateForm />
 
           {/* The how-to material (formats, FoV sizes, workflow) lives in the docs. */}
@@ -108,10 +80,9 @@ export default function HomePage() {
             </Link>
           </p>
         </div>
-      </section>
 
-      {/* ------------------------------------------------------- Mission section */}
-      <MissionBrief />
+        <MissionBrief />
+      </section>
 
       {/* --------------------------------------------------------- Challenge CTA */}
       <section
