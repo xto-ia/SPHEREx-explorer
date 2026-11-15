@@ -324,24 +324,6 @@ const en = {
     overlayGrid: 'Grid',
     overlayLabels: 'Labels',
     overlayTracks: 'Tracks',
-    fieldNotesTitle: 'Field notes',
-    fieldNotesBody:
-      'A quick reference for reading the frame and for getting the most out of the blink comparator.',
-    readingTips: [
-      'Blink first: a point that jumps between epochs is a mover candidate.',
-      'Difference mode turns motion into a cyan/rose dipole; static stars cancel.',
-      'Co-add every epoch to sharpen stationary sources before measuring.',
-      'A detector array is not a stack: it is one spectral image where every row has its own wavelength. Switch to Advanced to isolate a single channel.',
-    ],
-    legendTitle: 'Legend',
-    legendTarget: 'Science target',
-    legendGaia: 'Gaia DR3 + PM',
-    legendWise: 'WISE / NEOWISE',
-    legendNeo: 'NEOSSat frame',
-    legendFlags: 'Contaminated pixel',
-    aboutTarget: 'About this field',
-    customFieldNote:
-      'Custom field: every field is rendered from real SPHEREx Level-2 detector images resampled by the backend.',
     moversTitle: 'Movers & transients',
     moversBody:
       'Image-based peaks in the cleaned epoch difference: moving sources, variables and transients, filtered against cosmic rays, saturation and hot pixels. Click a candidate to centre the aperture and extract its spectrum.',
@@ -477,6 +459,19 @@ const en = {
       'Pick a detector array, then a channel inside it: the viewport keeps only the pixels the mission assigns to that channel.',
       'Click a source to build its multi-visit spectrum; the pixel probe shows wavelength, σ, channel and the FLAGS bitmask.',
     ],
+    readingTipsTitle: 'Reading the frames',
+    readingTips: [
+      'Blink first: a point that jumps between epochs is a mover candidate, and a difference image isolates it as a cyan/rose dipole.',
+      'In difference mode static stars cancel: rose is new flux, cyan is flux that disappeared.',
+      'Co-add the epochs to sharpen stationary sources; the spectrum itself is still measured visit by visit.',
+      'A detector array is not a stack of channels: it is one spectral image with one wavelength per row. Switch to Advanced to isolate a single official channel.',
+    ],
+    overlaysLegendTitle: 'Overlay legend',
+    legendTarget: 'Science target',
+    legendGaia: 'Gaia DR3 + proper motion',
+    legendWise: 'WISE / NEOWISE',
+    legendNeo: 'NEOSSat frame',
+    legendFlags: 'Contaminated pixel',
 
     modesBody:
       'The workspace has two surfaces over the same real data. Simple mode hides controls, not information: every pixel it shows is a real calibrated SPHEREx plane, and its spectrum is the same multi-visit measurement as in advanced mode.',
@@ -1035,24 +1030,6 @@ const uk: Dictionary = {
     overlayGrid: 'Сітка',
     overlayLabels: 'Підписи',
     overlayTracks: 'Треки',
-    fieldNotesTitle: 'Польові нотатки',
-    fieldNotesBody:
-      'Коротка довідка для читання кадру та максимальної користі від компаратора миготіння.',
-    readingTips: [
-      'Спершу миготіння: точка, що стрибає між епохами, є кандидатом у рухомі об’єкти.',
-      'Режим різниці перетворює рух на бірюзово-рожевий диполь; нерухомі зорі гасяться.',
-      'Додайте всі епохи, щоб підсилити нерухомі джерела перед вимірюванням.',
-      'Матриця — це не стек: це одне спектральне зображення, де кожен рядок має власну довжину хвилі. Перемкніться на «Розширений», щоб ізолювати один канал.',
-    ],
-    legendTitle: 'Легенда',
-    legendTarget: 'Науковий об’єкт',
-    legendGaia: 'Gaia DR3 + власний рух',
-    legendWise: 'WISE / NEOWISE',
-    legendNeo: 'Кадр NEOSSat',
-    legendFlags: 'Забруднений піксель',
-    aboutTarget: 'Про це поле',
-    customFieldNote:
-      'Довільне поле: кожне поле рендериться з реальних зображень детекторів SPHEREx рівня 2, перепроєктованих бекендом.',
     moversTitle: 'Рухомі об’єкти й транзієнти',
     moversBody:
       'Піки в очищеній різниці епох: рухомі джерела, змінні та транзієнти після відсіювання космічних променів, насичення й гарячих пікселів. Клацніть кандидата, щоб відцентрувати апертуру й отримати спектр.',
@@ -1188,6 +1165,19 @@ const uk: Dictionary = {
       'Виберіть матрицю детектора, а потім канал у ній: вікно лишить тільки ті пікселі, які місія віднесла до цього каналу.',
       'Клацніть джерело, щоб побудувати мультивізитний спектр; проба пікселя показує довжину хвилі, σ, канал і бітмаску FLAGS.',
     ],
+    readingTipsTitle: 'Як читати кадри',
+    readingTips: [
+      'Спершу миготіння: точка, що стрибає між епохами, — кандидат у рухомі об’єкти, а різницеве зображення перетворює її на бірюзово-рожевий диполь.',
+      'У режимі різниці нерухомі зорі гасяться: рожевий — новий потік, бірюзовий — потік, що зник.',
+      'Додайте епохи, щоб підсилити нерухомі джерела; сам спектр при цьому все одно вимірюється візит за візитом.',
+      'Матриця детектора — не стек каналів: це одне спектральне зображення, де кожен рядок має власну довжину хвилі. Перемкніться на «Розширений», щоб ізолювати один офіційний канал.',
+    ],
+    overlaysLegendTitle: 'Легенда накладань',
+    legendTarget: 'Науковий об’єкт',
+    legendGaia: 'Gaia DR3 + власний рух',
+    legendWise: 'WISE / NEOWISE',
+    legendNeo: 'Кадр NEOSSat',
+    legendFlags: 'Забруднений піксель',
 
     modesBody:
       'Робоче поле має дві поверхні над тими самими реальними даними. Простий режим ховає елементи керування, а не інформацію: кожен піксель, який він показує, — це реальна калібрована площина SPHEREx, а його спектр — те саме мультивізитне вимірювання, що й у розширеному режимі.',

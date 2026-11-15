@@ -30,7 +30,6 @@ import SimpleArraySelector from '../components/workspace/SimpleArraySelector';
 import CatalogOverlays from '../components/workspace/CatalogOverlays';
 import MetadataInspector from '../components/workspace/MetadataInspector';
 import SpectrumPlotter from '../components/workspace/SpectrumPlotter';
-import FieldNotes from '../components/workspace/FieldNotes';
 import MoverCandidates from '../components/workspace/MoverCandidates';
 
 function detectorForChannel(channel: { type: string; band: number; array: number }): number {
@@ -885,13 +884,6 @@ export default function WorkspacePage() {
                 fieldDec={state.dec}
                 detector={detector}
                 simple={state.ui === 'simple'}
-              />
-
-              <FieldNotes
-                target={state.target}
-                targetName={targetName}
-                raLabel={formatRa(state.ra)}
-                decLabel={formatDec(state.dec)}
               />
             </aside>
           </div>

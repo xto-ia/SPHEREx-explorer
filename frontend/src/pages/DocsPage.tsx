@@ -14,6 +14,15 @@ const SOURCE_LINKS = [
   { label: 'CADC CAOM2', href: 'https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/' },
 ];
 
+/** Marker shapes used by the workspace overlays, documented in the intake guide. */
+const OVERLAY_LEGEND = [
+  { key: 'legendTarget', shape: 'circle', color: 'rgb(var(--accent-bright))' },
+  { key: 'legendGaia', shape: 'diamond', color: '#38bdf8' },
+  { key: 'legendWise', shape: 'ring', color: '#f59e0b' },
+  { key: 'legendNeo', shape: 'line', color: '#f43f5e' },
+  { key: 'legendFlags', shape: 'square', color: '#fbbf24' },
+] as const;
+
 /** Numbered procedure list shared by the intake workflow and the data pipeline. */
 function StepList({ steps }: { steps: readonly string[] }) {
   return (
@@ -170,6 +179,51 @@ export default function DocsPage() {
               {t.docs.intakeWorkflowBody}
             </p>
             <StepList steps={t.docs.intakeWorkflowSteps} />
+
+            <h3 className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400">
+              {t.docs.readingTipsTitle}
+            </h3>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {t.docs.readingTips.map((tip) => (
+                <li
+                  key={tip}
+                  className="flex gap-2 border border-line bg-canvas/90 p-3 text-[12px] leading-relaxed text-zinc-500"
+                >
+                  <span aria-hidden="true" className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent/70" />
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-3 border border-line bg-canvas/90 p-3">
+              <p className="label-mono">{t.docs.overlaysLegendTitle}</p>
+              <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
+                {OVERLAY_LEGEND.map((item) => (
+                  <li key={item.key} className="flex items-center gap-2 font-mono text-[10px] text-zinc-500">
+                    <span
+                      aria-hidden="true"
+                      className={
+                        item.shape === 'circle'
+                          ? 'h-1.5 w-1.5 rounded-full'
+                          : item.shape === 'diamond'
+                            ? 'h-1.5 w-1.5 rotate-45'
+                            : item.shape === 'ring'
+                              ? 'h-1.5 w-1.5 rounded-full border'
+                              : item.shape === 'line'
+                                ? 'h-px w-3'
+                                : 'h-1.5 w-1.5'
+                      }
+                      style={
+                        item.shape === 'ring'
+                          ? { borderColor: item.color }
+                          : { backgroundColor: item.color }
+                      }
+                    />
+                    {t.docs[item.key]}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
 
           {/* Capabilities */}
