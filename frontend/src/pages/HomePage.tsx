@@ -92,7 +92,7 @@ export default function HomePage() {
       {/* --------------------------------------------------------- Challenge CTA */}
       <section
         aria-labelledby="challenge-title"
-        className="mt-16 grid gap-6 border border-line bg-surface p-6 backdrop-blur-md md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] md:items-center"
+        className="mt-20 grid gap-6 border border-line bg-surface p-6 backdrop-blur-md sm:mt-24 lg:mt-32 md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] md:items-center"
       >
         <div>
           <p className="kicker">{t.home.challengeKicker}</p>
