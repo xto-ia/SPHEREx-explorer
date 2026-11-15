@@ -65,3 +65,16 @@ for _index in range(1, len(CHANNELS)):
     _edges.append(round((_previous[4] + _current[3]) / 2.0, 5))
 _edges.append(CHANNELS[-1][4])
 CHANNEL_EDGES_UM = tuple(_edges)
+
+
+def source_stamp() -> str:
+    """Newest modification time of the backend sources, as a string.
+
+    A local API is only reused when its stamp matches this value: a uvicorn
+    left over from an earlier session would otherwise keep serving the old
+    code no matter how often the launcher is restarted.
+    """
+
+    files = list(Path(__file__).resolve().parent.glob("*.py")) + [BASE_DIR / "main.py"]
+    newest = max((path.stat().st_mtime for path in files if path.exists()), default=0.0)
+    return f"{newest:.3f}"

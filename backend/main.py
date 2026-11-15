@@ -19,13 +19,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.cache import cache
 from app.channels import band_rows, channel_rows
-from app.config import CORS_ORIGINS, CORS_ORIGIN_REGEX, FRAME_SIZE, MAX_FOV, MIN_FOV
+from app.config import CORS_ORIGINS, CORS_ORIGIN_REGEX, FRAME_SIZE, MAX_FOV, MIN_FOV, source_stamp
 from app.frames import LAMBDA_SIZE, available_detectors, frame, stack
 from app.overlays import overlays
 from app.sia import coverage, remembered_fields
 from app.spectrum import spectrum
 
 FRAME_MAGIC = b"SPXF"
+
+# Evaluated once, when this process starts: a running API keeps the stamp of the
+# code it actually loaded, so the launcher can tell it apart from a newer source.
+SOURCE_STAMP = source_stamp()
 
 app = FastAPI(title="SPHEREx Explorer API", version="2.0.0")
 app.add_middleware(
@@ -59,6 +63,8 @@ def health() -> dict:
         "status": "ok",
         "service": "spherex-explorer-api",
         "version": app.version,
+        # Lets start-local.cmd tell a current API from a leftover process.
+        "sourceStamp": SOURCE_STAMP,
         "cache": cache.stats(),
     }
 

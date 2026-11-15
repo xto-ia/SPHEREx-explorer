@@ -103,7 +103,15 @@ start-local.cmd
 
 starts the API at `http://127.0.0.1:8787` and Vite at
 `http://127.0.0.1:5173` (flags: `--no-open`, `--backend-only`,
-`--frontend-only`, `--install`, `--api-port N`, `--port N`).
+`--frontend-only`, `--install`, `--restart`, `--reuse`, `--check`,
+`--api-port N`, `--port N`).
+
+The launcher never reuses a backend that runs older code: `/api/health` reports
+a `sourceStamp` (the newest backend source mtime, captured when the process
+started), and a mismatch stops that uvicorn and starts the current one. The web
+port is freed the same way, so the browser cannot keep talking to a leftover
+Vite from an earlier session. `--check` prints both port states and the stamp
+without changing anything.
 
 Manual:
 
