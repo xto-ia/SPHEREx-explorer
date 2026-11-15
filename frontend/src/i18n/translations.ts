@@ -246,7 +246,7 @@ const en = {
     discovering: 'discovering archive products',
     loadingEpochs: 'loading {done}/{total} epochs',
     apiOffline:
-      'The local archive service is offline. Start it with start-local.cmd or uvicorn main:app --port 8787.',
+      'The archive service is not responding. Check your connection and try again in a minute.',
     noCoverage:
       'No SPHEREx product covers this field. Choose another coordinate or press Random point.',
     archiveUnreachable:
@@ -957,7 +957,7 @@ const uk: Dictionary = {
     discovering: 'пошук архівних продуктів',
     loadingEpochs: 'завантаження епох {done}/{total}',
     apiOffline:
-      'Локальний архівний сервіс недоступний. Запустіть start-local.cmd або uvicorn main:app --port 8787.',
+      'Архівний сервіс не відповідає. Перевірте з’єднання й спробуйте ще раз за хвилину.',
     noCoverage:
       'Жоден продукт SPHEREx не покриває це поле. Виберіть інші координати або натисніть «Випадкова точка».',
     archiveUnreachable:
