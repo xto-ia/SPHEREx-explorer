@@ -65,7 +65,7 @@ export default function HomePage() {
       </section>
 
       {/* ------------------- Coordinate intake + mission overview (side by side on 1440px+) */}
-      <section className="mt-14 grid grid-cols-1 gap-10 min-[1440px]:grid-cols-[minmax(0,1.04fr)_minmax(0,1fr)] min-[1440px]:items-start">
+      <section className="mt-14 grid grid-cols-1 gap-10 min-[1440px]:grid-cols-[minmax(0,1.04fr)_minmax(0,1fr)] min-[1440px]:items-center">
         <div className="min-w-0">
           <CoordinateForm />
 
