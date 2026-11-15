@@ -132,7 +132,9 @@ const en = {
     challengeKicker: 'THE CHALLENGE',
     challengeTitle: 'Built for NASA Space Apps',
     challengeBody:
-      'NASA asked for a public-facing tool that shows how the sky changes between SPHEREx epochs. This explorer streams the real Level-2 products: a Python service discovers the exposures, resamples them onto a common grid and extracts spectra, while pixel math runs in Web Workers.',
+      'The NASA Space Apps Challenge is the world’s largest hackathon: teams everywhere build open projects on NASA and partner data in a 48-hour sprint. This explorer answers the 2026 Planet X & SPHEREx challenge.',
+    challengePrimaryCta: 'Space Apps website',
+    challengeSecondaryCta: 'Planet X & SPHEREx challenge',
 
     targetsHeading: 'Official test targets',
     targetsSubheading: 'Five sources chosen to stress-test motion, variability and spectral depth.',
@@ -842,7 +844,9 @@ const uk: Dictionary = {
     challengeKicker: 'ЗАВДАННЯ',
     challengeTitle: 'Створено для NASA Space Apps',
     challengeBody:
-      'NASA запропонувала публічний інструмент, який показує, як небо змінюється між епохами SPHEREx. Цей огляд читає справжні продукти рівня 2: сервіс на Python знаходить експозиції, перепроєктує їх на спільну сітку та витягує спектри, а піксельна математика виконується у Web Workers.',
+      'NASA Space Apps Challenge — найбільший у світі хакатон: команди з усього світу за 48 годин створюють відкриті проєкти на даних NASA та партнерів. Цей огляд відповідає на завдання Planet X & SPHEREx 2026 року.',
+    challengePrimaryCta: 'Сайт хакатону',
+    challengeSecondaryCta: 'Завдання Planet X & SPHEREx',
 
     targetsHeading: 'Офіційні тестові об’єкти',
     targetsSubheading: 'П’ять джерел, підібраних для перевірки руху, змінності та спектральної глибини.',

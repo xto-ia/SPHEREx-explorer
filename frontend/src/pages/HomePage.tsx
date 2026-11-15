@@ -1,11 +1,16 @@
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Boxes, Search } from 'lucide-react';
+import { Boxes, ExternalLink, Search } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { APP_CONFIG } from '../config/app.config';
 import CoordinateForm from '../components/home/CoordinateForm';
 import MissionBrief from '../components/home/MissionBrief';
 import SpherexModelCanvas from '../components/home/SpherexModelCanvas';
+
+/** NASA Space Apps Challenge — hackathon home and this year's SPHEREx brief. */
+const SPACE_APPS_URL = 'https://www.spaceappschallenge.org/';
+const SPHEREX_CHALLENGE_URL =
+  'https://www.spaceappschallenge.org/2026/challenges/planet-x-and-spherex/';
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -97,14 +102,24 @@ export default function HomePage() {
           <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-zinc-500">{t.home.challengeBody}</p>
         </div>
         <div className="flex flex-col gap-2">
-          <Link to="/workspace" className="btn-primary">
-            <Boxes size={13} aria-hidden="true" />
-            {t.common.openWorkspace}
-          </Link>
-          <Link to="/docs" className="btn-ghost">
-            {t.common.readDocs}
-            <ArrowRight size={13} aria-hidden="true" />
-          </Link>
+          <a
+            href={SPACE_APPS_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="btn-primary"
+          >
+            <ExternalLink size={13} aria-hidden="true" />
+            {t.home.challengePrimaryCta}
+          </a>
+          <a
+            href={SPHEREX_CHALLENGE_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="btn-ghost"
+          >
+            {t.home.challengeSecondaryCta}
+            <ExternalLink size={13} aria-hidden="true" />
+          </a>
         </div>
       </section>
     </div>
