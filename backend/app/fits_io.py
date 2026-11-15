@@ -16,6 +16,10 @@ from contextlib import contextmanager
 import httpx
 from astropy.io import fits
 
+# 128 kB balances two costs measured against the real products: enough to cover
+# a FITS header block in one round trip, small enough that astropy's walk over
+# the HDU headers of a 62 MB product does not pull half a megabyte per seek.
+# (512 kB blocks fetched 5.8 MB where 128 kB needed 3.3 MB for the same reads.)
 DEFAULT_BLOCK = 128 * 1024
 DEFAULT_TIMEOUT = 120.0
 

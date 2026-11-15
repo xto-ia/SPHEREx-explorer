@@ -16,6 +16,7 @@ from typing import Annotated
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.cache import cache
 from app.channels import band_rows, channel_rows
@@ -43,6 +44,12 @@ app.add_middleware(
 
 def _clamp_fov(fov: float) -> float:
     return max(MIN_FOV, min(MAX_FOV, fov))
+
+
+def _ms_since(started: float) -> float:
+    """Milliseconds elapsed since ``started`` (a ``perf_counter`` value)."""
+
+    return (time.perf_counter() - started) * 1000.0
 
 
 def _pack(header: dict, planes: list[tuple[str, np.ndarray]]) -> Response:
@@ -74,15 +81,21 @@ def api_coverage(
     ra: Annotated[float, Query(ge=0, lt=360)],
     dec: Annotated[float, Query(ge=-90, le=90)],
     fov: Annotated[float, Query(gt=0)] = 0.5,
-) -> dict:
+) -> Response:
     fov = _clamp_fov(fov)
+    started = time.perf_counter()
     data = coverage(ra, dec, fov)
     data["frameSize"] = FRAME_SIZE
     data["requests"] = [
         {"epoch": epoch["index"], "detectors": sorted(int(key) for key in epoch["detectors"])}
         for epoch in data["epochs"]
     ]
-    return data
+    timings = f"coverage;dur={_ms_since(started):.1f}"
+    if data.get("archiveError"):
+        timings += ", archive;desc=unreachable"
+    # Additive diagnostics only: the JSON body is unchanged, so the UI keeps
+    # working while the browser devtools show where the seconds went.
+    return JSONResponse(content=data, headers={"Server-Timing": timings})
 
 
 @app.get("/api/frame")
@@ -97,6 +110,7 @@ def api_frame(
     variance: Annotated[int, Query(ge=0, le=1)] = 1,
 ) -> Response:
     fov = _clamp_fov(fov)
+    started = time.perf_counter()
     result = (
         stack(ra, dec, fov, epoch, shape, want_flags=bool(flags))
         if detector == 0
@@ -172,7 +186,12 @@ def api_frame(
         planes.append(("<f4", np.asarray(variance_plane, dtype=np.float32)))
     if result["flags"] is not None:
         planes.append(("<u4", np.asarray(result["flags"], dtype=np.uint32)))
-    return _pack(header, planes)
+    response = _pack(header, planes)
+    response.headers["Server-Timing"] = (
+        f"frame;dur={_ms_since(started):.1f}, "
+        f"cache;desc={'hit' if result['fromCache'] else 'miss'}"
+    )
+    return response
 
 
 @app.get("/api/bands")

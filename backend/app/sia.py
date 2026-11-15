@@ -267,6 +267,12 @@ def coverage(
             for index, (mjd, products) in enumerate(epochs)
         ],
     }
+    # A failed query is not an answer about the sky: caching "no coverage" after
+    # an IRSA outage (they answer 502 often enough) would keep the UI stuck on
+    # NO COVERAGE for the whole negative TTL and hide the next good retry.
+    if result["archiveError"]:
+        return result
+
     cache.put_json(key, result, ttl=SIA_CACHE_TTL if result["covered"] else 60)
     if result["covered"]:
         remember_field(ra, dec)

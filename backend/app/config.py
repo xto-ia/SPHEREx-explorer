@@ -23,7 +23,11 @@ FRAME_SIZE = 480
 MAX_FOV = 5.0
 MIN_FOV = 0.05
 
-SIA_CACHE_TTL = 60 * 60  # 1 hour
+# IRSA products are immutable once published, and a 1-hour TTL meant every
+# revisit after a coffee break paid the full SIA discovery round trip (measured
+# at ~21 s per query on a normal connection). A day keeps the list fresh enough
+# for a survey that is still growing without making the user wait for it.
+SIA_CACHE_TTL = 24 * 60 * 60  # 24 hours
 OVERLAY_CACHE_TTL = 6 * 60 * 60
 FLAGS_CACHE_TTL = 30 * 24 * 60 * 60
 
