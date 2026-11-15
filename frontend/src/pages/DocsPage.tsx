@@ -206,7 +206,7 @@ export default function DocsPage() {
                         item.shape === 'circle'
                           ? 'h-1.5 w-1.5 rounded-full'
                           : item.shape === 'diamond'
-                            ? 'h-1.5 w-1.5 rotate-45'
+                            ? 'h-1.5 w-1.5 rotate-45 border'
                             : item.shape === 'ring'
                               ? 'h-1.5 w-1.5 rounded-full border'
                               : item.shape === 'line'
@@ -214,7 +214,7 @@ export default function DocsPage() {
                                 : 'h-1.5 w-1.5'
                       }
                       style={
-                        item.shape === 'ring'
+                        item.shape === 'ring' || item.shape === 'diamond'
                           ? { borderColor: item.color }
                           : { backgroundColor: item.color }
                       }

@@ -40,7 +40,7 @@ export default function OverlayLegend() {
                 item.symbol === 'circle'
                   ? 'h-1.5 w-1.5 shrink-0 rounded-full'
                   : item.symbol === 'diamond'
-                    ? 'h-1.5 w-1.5 shrink-0 rotate-45'
+                    ? 'h-1.5 w-1.5 shrink-0 rotate-45 border'
                     : item.symbol === 'ring'
                       ? 'h-1.5 w-1.5 shrink-0 rounded-full border'
                       : item.symbol === 'path'
@@ -48,7 +48,7 @@ export default function OverlayLegend() {
                         : 'h-1.5 w-1.5 shrink-0'
               }
               style={
-                item.symbol === 'ring'
+                item.symbol === 'ring' || item.symbol === 'diamond'
                   ? { borderColor: item.color }
                   : { backgroundColor: item.color }
               }

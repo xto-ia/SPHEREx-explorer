@@ -77,9 +77,10 @@ function drawMarker(
   color: string,
   shape: 'diamond' | 'circle',
   size = 4,
+  filled = true,
 ) {
   ctx.strokeStyle = color;
-  ctx.fillStyle = color.replace('0.9', '0.14');
+  if (filled) ctx.fillStyle = color.replace('0.9', '0.14');
   ctx.lineWidth = 1;
   ctx.beginPath();
   if (shape === 'diamond') {
@@ -91,7 +92,7 @@ function drawMarker(
   } else {
     ctx.arc(x, y, size, 0, Math.PI * 2);
   }
-  ctx.fill();
+  if (filled) ctx.fill();
   ctx.stroke();
 }
 
@@ -107,13 +108,6 @@ const NEOSSAT_RGB = '244, 63, 94';
 const PM_BASELINE_YEARS = 10;
 const PM_MIN_PX = 3;
 const PM_MAX_PX = 48;
-
-/**
- * Above this many catalogue markers the diamonds turn into sub-pixel dots.
- * A dense 0.5 deg field holds thousands of Gaia sources; drawn at full size
- * they would cover a third of the frame and hide the SPHEREx image itself.
- */
-const DENSE_MARKER_COUNT = 700;
 
 
 /** Vertices of a real CADC footprint, or a square from the catalogued size. */
@@ -329,7 +323,6 @@ export default function BlinkViewport({
     ctx.textBaseline = 'middle';
     const centrePixel = (size - 1) / 2;
     const centre = { ra, dec, fov };
-    const dense = overlaySources.length > DENSE_MARKER_COUNT;
 
     if (overlays.grid) {
       ctx.save();
@@ -374,15 +367,9 @@ export default function BlinkViewport({
       if (point.x < -6 || point.y < -6 || point.x > size + 6 || point.y > size + 6) continue;
 
       if (isGaia) {
-        // Thousands of catalogue entries must read as a star map, not as a
-        // solid block of glyphs: above the density threshold each source is a
-        // dot and the image stays visible underneath.
-        if (dense) {
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
-          ctx.fillRect(point.x - 0.75, point.y - 0.75, 1.5, 1.5);
-        } else {
-          drawMarker(ctx, point.x, point.y, 'rgba(56, 189, 248, 0.9)', 'diamond', 3);
-        }
+        // A hollow diamond: small enough that a few thousand sources still read
+        // as a star map, heavy enough to stay visible against the image.
+        drawMarker(ctx, point.x, point.y, 'rgba(56, 189, 248, 0.9)', 'diamond', 2, false);
         const pmRa = source.pmRa ?? 0;
         const pmDec = source.pmDec ?? 0;
         const total = Math.hypot(pmRa, pmDec);
@@ -391,7 +378,7 @@ export default function BlinkViewport({
           const length = Math.min(PM_MAX_PX, Math.max(PM_MIN_PX, truePx));
           const vx = -(pmRa / total) * length;
           const vy = -(pmDec / total) * length;
-          ctx.strokeStyle = dense ? 'rgba(56, 189, 248, 0.28)' : 'rgba(56, 189, 248, 0.5)';
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
           ctx.beginPath();
           ctx.moveTo(point.x, point.y);
           ctx.lineTo(point.x + vx, point.y + vy);
