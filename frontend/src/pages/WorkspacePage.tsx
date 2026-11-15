@@ -12,6 +12,7 @@ import {
   type NeossatObservation,
   type OverlayData,
   type OverlayLayer,
+  type OverlayStatus,
   type SpectrumData,
 } from '../lib/api';
 import { allBandIndices, arrayLabel, bandAt, bandIndicesForArray } from '../lib/sky/bands';
@@ -126,6 +127,9 @@ export default function WorkspacePage() {
   const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [candidateFocus, setCandidateFocus] = useState<number | null>(null);
   const [overlayData, setOverlayData] = useState<OverlayData | null>(null);
+  const [overlayStatus, setOverlayStatus] = useState<Partial<Record<OverlayLayer, OverlayStatus>>>(
+    { gaia: 'loading', wise: 'loading', neossat: 'loading' },
+  );
   const candidateTokenRef = useRef(0);
   const spectrumTokenRef = useRef(0);
   const playbackDirRef = useRef<1 | -1>(1);
@@ -201,6 +205,14 @@ export default function WorkspacePage() {
     if (!state.hasCoordinates) return undefined;
     let cancelled = false;
 
+    const markLayers = (layers: OverlayLayer[], status: OverlayStatus) => {
+      setOverlayStatus((previous) => {
+        const next = { ...previous };
+        for (const layer of layers) next[layer] = status;
+        return next;
+      });
+    };
+
     const merge = (incoming: OverlayData) => {
       setOverlayData((previous) => {
         if (!previous) return incoming;
@@ -223,15 +235,20 @@ export default function WorkspacePage() {
     const load = async (layers: OverlayLayer[]) => {
       try {
         const data = await fetchOverlays(state.ra, state.dec, state.fov, layers);
-        if (!cancelled) merge(data);
+        if (cancelled) return;
+        merge(data);
+        markLayers(layers, 'ready');
       } catch {
-        // A dead archive leaves the other layers untouched; the panel shows it.
+        // The request itself failed (API offline, proxy, timeout): the panel
+        // must stop saying "querying the archive…" and say what happened.
+        if (!cancelled) markLayers(layers, 'unreachable');
       }
     };
 
     // Never keep rows from the previous field: a layer that fails here must not
     // inherit the counts or markers of the sky area the user just left.
     setOverlayData(null);
+    setOverlayStatus({ gaia: 'loading', neossat: 'loading', wise: 'loading' });
     void load(['gaia', 'neossat']);
     void load(['wise']);
 
@@ -810,6 +827,7 @@ export default function WorkspacePage() {
                     counts={counts}
                     meta={overlayMeta}
                     errors={overlayErrors}
+                    status={overlayStatus}
                     onToggle={(key, value) => update({ overlays: { [key]: value } })}
                   />
                 </div>

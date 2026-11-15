@@ -1,6 +1,6 @@
 import { Radio, Satellite, Telescope } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
-import type { OverlayLayer, OverlayMeta } from '../../lib/api';
+import type { OverlayLayer, OverlayMeta, OverlayStatus } from '../../lib/api';
 import type { WorkspaceState } from '../../hooks/useUrlSync';
 
 interface CatalogOverlaysProps {
@@ -10,6 +10,8 @@ interface CatalogOverlaysProps {
   meta: Partial<Record<OverlayLayer, OverlayMeta>>;
   /** Per-layer upstream failures, shaped `"wise: timeout"`. */
   errors: string[];
+  /** Request state per layer — never inferred from the payload. */
+  status: Partial<Record<OverlayLayer, OverlayStatus>>;
   onToggle: (key: keyof WorkspaceState['overlays'], value: boolean) => void;
 }
 
@@ -18,6 +20,7 @@ export default function CatalogOverlays({
   counts,
   meta,
   errors,
+  status,
   onToggle,
 }: CatalogOverlaysProps) {
   const { t } = useLanguage();
@@ -27,57 +30,53 @@ export default function CatalogOverlays({
     return entry ? entry.slice(layer.length + 1).trim() : null;
   };
 
-  const gaiaError = errorFor('gaia');
-  const wiseError = errorFor('wise');
-  const neossatError = errorFor('neossat');
+  /**
+   * One status line per layer, in priority order: the request itself failed →
+   * the archive reported a failure → still in flight → the real count.
+   */
+  const layerDetail = (layer: OverlayLayer, ready: string): string => {
+    if (status[layer] === 'unreachable') return t.workspace.overlayApiOffline;
+    if (errorFor(layer)) return t.workspace.overlayUnavailable;
+    if (status[layer] === 'loading') return t.workspace.overlayPending;
+    return ready;
+  };
 
   const gaiaMeta = meta.gaia;
   const wiseMeta = meta.wise;
   const neossatMeta = meta.neossat;
 
-  /**
-   * A layer without `meta` and without an error has not answered yet: WISE can
-   * take a minute, and "no WISE source in this field" would be a lie until the
-   * archive actually replies.
-   */
-  const isPending = (layer: OverlayLayer) => !meta[layer] && !errorFor(layer);
+  const gaiaCount = gaiaMeta?.truncated
+    ? t.workspace.overlayTruncated
+        .replace('{n}', String(gaiaMeta.returned))
+        .replace('{total}', String(gaiaMeta.total ?? '—'))
+        .replace('{mag}', gaiaMeta.magLimit != null ? gaiaMeta.magLimit.toFixed(1) : '—')
+    : gaiaMeta
+      ? t.workspace.overlayAllSources.replace('{n}', String(counts.gaia))
+      // An older backend without `meta` still answers with a real list.
+      : t.workspace.overlayGaiaDetail.replace('{n}', String(counts.gaia));
 
-  const gaiaDetail = gaiaError
-    ? t.workspace.overlayUnavailable
-    : isPending('gaia')
-      ? t.workspace.overlayPending
-      : gaiaMeta?.truncated
-        ? t.workspace.overlayTruncated
-            .replace('{n}', String(gaiaMeta.returned))
-            .replace('{total}', String(gaiaMeta.total ?? '—'))
-            .replace('{mag}', gaiaMeta.magLimit != null ? gaiaMeta.magLimit.toFixed(1) : '—')
-        : t.workspace.overlayAllSources.replace('{n}', String(counts.gaia));
+  const wiseCount =
+    counts.wise > 0
+      ? (wiseMeta?.truncated ? t.workspace.overlayWiseTruncated : t.workspace.overlayWiseDetail).replace(
+          '{n}',
+          String(counts.wise),
+        )
+      : t.workspace.overlayWiseEmpty;
 
-  const wiseDetail = wiseError
-    ? t.workspace.overlayUnavailable
-    : isPending('wise')
-      ? t.workspace.overlayPending
-      : counts.wise > 0
-        ? (wiseMeta?.truncated ? t.workspace.overlayWiseTruncated : t.workspace.overlayWiseDetail).replace(
-            '{n}',
-            String(counts.wise),
-          )
-        : t.workspace.overlayWiseEmpty;
+  const neossatCount = neossatMeta?.truncated
+    ? t.workspace.overlayNeossatTruncated
+        .replace('{n}', String(neossatMeta.returned))
+        .replace('{total}', String(neossatMeta.total ?? '—'))
+    : counts.neossat > 0
+      ? (counts.neossat === 1
+          ? t.workspace.overlayNeossatDetailOne
+          : t.workspace.overlayNeossatDetail
+        ).replace('{n}', String(counts.neossat))
+      : t.workspace.overlayNeossatEmpty;
 
-  const neossatDetail = neossatError
-    ? t.workspace.overlayUnavailable
-    : isPending('neossat')
-      ? t.workspace.overlayPending
-      : neossatMeta?.truncated
-        ? t.workspace.overlayNeossatTruncated
-            .replace('{n}', String(neossatMeta.returned))
-            .replace('{total}', String(neossatMeta.total ?? '—'))
-        : counts.neossat > 0
-          ? (counts.neossat === 1
-              ? t.workspace.overlayNeossatDetailOne
-              : t.workspace.overlayNeossatDetail
-            ).replace('{n}', String(counts.neossat))
-          : t.workspace.overlayNeossatEmpty;
+  const gaiaDetail = layerDetail('gaia', gaiaCount);
+  const wiseDetail = layerDetail('wise', wiseCount);
+  const neossatDetail = layerDetail('neossat', neossatCount);
 
   const layers: Array<{
     key: keyof WorkspaceState['overlays'];
@@ -96,7 +95,7 @@ export default function CatalogOverlays({
       color: '#38bdf8',
       icon: Telescope,
       count: counts.gaia,
-      failed: Boolean(gaiaError),
+      failed: Boolean(errorFor('gaia')) || status.gaia === 'unreachable',
     },
     {
       key: 'wise',
@@ -106,7 +105,7 @@ export default function CatalogOverlays({
       icon: Radio,
       count: counts.wise,
       muted: counts.wise === 0,
-      failed: Boolean(wiseError),
+      failed: Boolean(errorFor('wise')) || status.wise === 'unreachable',
     },
     {
       key: 'neossat',
@@ -116,7 +115,7 @@ export default function CatalogOverlays({
       icon: Satellite,
       count: counts.neossat,
       muted: counts.neossat === 0,
-      failed: Boolean(neossatError),
+      failed: Boolean(errorFor('neossat')) || status.neossat === 'unreachable',
     },
   ];
 

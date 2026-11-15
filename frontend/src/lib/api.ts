@@ -140,6 +140,15 @@ export interface NeossatObservation {
 export type OverlayLayer = 'gaia' | 'wise' | 'neossat';
 
 /**
+ * Request state of one overlay layer.
+ *
+ * The panel must not guess this from the payload: an older backend without
+ * `meta`, or a fetch that never lands, would otherwise look like an endless
+ * "querying the archive…".
+ */
+export type OverlayStatus = 'loading' | 'ready' | 'unreachable';
+
+/**
  * How complete a layer's list is.
  *
  * `total` is what the archive holds for this field, `returned` is what the
