@@ -7,6 +7,9 @@ real near-infrared spectrum of anything you click.
 
 Built for the **NASA Space Apps Challenge**.
 
+The in-app **Documentation** page (`/docs`) is the canonical, bilingual
+reference; this README is a short overview kept in sync with it.
+
 ![stack](https://img.shields.io/badge/React-18-09090b?style=flat-square)
 ![stack](https://img.shields.io/badge/TypeScript-5-09090b?style=flat-square)
 ![stack](https://img.shields.io/badge/FastAPI-astropy-09090b?style=flat-square)
@@ -19,7 +22,9 @@ Built for the **NASA Space Apps Challenge**.
 There is **no synthetic scene and no generated fallback imagery**.
 
 - **Backend (`backend/`, FastAPI + astropy + numpy)** — required. It
-  - discovers products through IRSA SIA2 (`spherex_dr1`, `spherex_qr3`, deep fields),
+  - discovers products through IRSA SIA2 (`spherex_qr3` wide + deep today; the
+    `spherex_dr1`/`spherex_dr1_deep` entries are queried when that release is
+    published),
   - reads Level-2 FITS planes lazily over HTTP Range requests (62 MB products,
     ~2 MB per cutout),
   - resamples every epoch onto a common SIP-aware 480 × 480 sky grid,
@@ -67,8 +72,8 @@ math**, selected with `?ui=simple|advanced` and remembered in `localStorage`:
   every pixel assigned elsewhere. The Arrays tab shows the full spectral image.
   A **Quick look** explicitly labels the mean of the six detector planes as a
   navigation aid, never a measurement.
-- **Movers & transients scan** — 6σ peak finder on the cleaned difference with
-  cosmic-ray / saturation / hot-pixel rejection.
+- **Movers & transients scan** — 6σ local-maximum peaks on the cleaned
+  difference, with a 3σ static-source mask and PSF-scale smoothing.
 - **Multi-visit spectra** — click the sky, then build the real spectrum from all
   visits covering the position; CSV export included.
 - **Overlays** — real Gaia proper motions, WISE detections and CSA NEOSSat

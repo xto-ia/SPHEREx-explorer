@@ -124,7 +124,7 @@ const en = {
       'The same sky patch returns every six months, producing a natural time series for spotting motion and variability.',
     cardArraysTitle: 'Six detector arrays',
     cardArraysBody:
-      'Stacking the 17 bands of each array boosts the signal-to-noise ratio by about 4×, so faint movers become visible.',
+      'Each array is one spectral image: every row carries its own wavelength, so a channel is read, not stacked, and nothing is averaged away.',
     cardDiscoveryTitle: 'Discovery for everyone',
     cardDiscoveryBody:
       'Public archive data lets anyone contribute to science — no observatory required.',
@@ -181,10 +181,10 @@ const en = {
       'Wipe one visit over another: drag the divider to sweep the seam across the same sky grid.',
     bandsTitle: 'Channels & detector arrays',
     bandsBody:
-      'Stack the 17 bands of each detector array for maximum SNR, or scrub individual narrow bands from 0.75 to 5.0 µm.',
+      'One real spectral image per detector array, covering 17 channels from 0.75 to 5.0 µm; isolate a channel instead of averaging wavelengths.',
     overlaysTitle: 'Multi-telescope overlays',
     overlaysBody:
-      'Toggle ESA Gaia DR3 proper-motion vectors, WISE/NEOWISE detections and the real CSA NEOSSat frame footprints catalogued by CADC.',
+      'Toggle ESA Gaia DR3 proper-motion vectors, WISE (AllWISE) detections and the real CSA NEOSSat frame footprints catalogued by CADC.',
     metadataTitle: 'Metadata & contamination flags',
     metadataBody:
       'Inspect MJD timestamps and the per-pixel bitmask: cosmic ray, saturation, diffraction spike, persistence, hot pixel.',
@@ -320,7 +320,7 @@ const en = {
     overlayUnavailable: 'archive unavailable — not an empty field',
     overlayApiOffline: 'local API offline',
     overlayPending: 'querying the archive…',
-    overlayWise: 'WISE / NEOWISE',
+    overlayWise: 'WISE (AllWISE)',
     overlayWiseDetail: '{n} infrared detections',
     overlayWiseTruncated: '{n}+ infrared detections (row cap)',
     overlayWiseEmpty: 'no WISE source in this field',
@@ -331,19 +331,19 @@ const en = {
     overlayNeossatEmpty: 'no NEOSSat frame covers this field',
     overlayNeossatError: 'CADC TAP unreachable',
     overlayPmNote:
-      'PM arrows: proper motion ×10 (10 years) · vectors shorter than 3 px are drawn at 3 px',
+      'PM arrows: 10-year proper-motion baseline · vectors shorter than 3 px are drawn at 3 px',
     overlayGrid: 'Grid',
     overlayLabels: 'Labels',
     overlayTracks: 'Tracks',
     legendTitle: 'Legend',
     legendTarget: 'Science target',
-    legendGaia: 'Gaia DR3 + PM ×10',
-    legendWise: 'WISE / NEOWISE',
+    legendGaia: 'Gaia DR3 + 10-year PM',
+    legendWise: 'WISE (AllWISE)',
     legendNeo: 'NEOSSat frame',
     legendFlags: 'Contaminated pixel',
     moversTitle: 'Movers & transients',
     moversBody:
-      'Image-based peaks in the cleaned epoch difference: moving sources, variables and transients, filtered against cosmic rays, saturation and hot pixels. Click a candidate to centre the aperture and extract its spectrum.',
+      'Image-based peaks in the cleaned epoch difference: moving sources, variables and transients above 6σ, with static stars masked at 3σ and PSF-scale residuals smoothed away. Click a candidate to centre the aperture and extract its spectrum.',
     moversScan: 'Scan',
     moversScanning: 'Scanning',
     moversNeedDiff: 'Switch to Difference mode to scan epoch A against epoch B.',
@@ -425,13 +425,20 @@ const en = {
     sectionModes: 'Two workspace modes',
     sectionSources: 'Data sources & archive pipelines',
     sectionPipeline: 'Pipeline & provenance',
+    sectionApi: 'Backend API',
     sectionWalkthrough: 'Test targets & what to look for',
     sectionEmbed: 'URL & iframe embed API',
     sectionShortcuts: 'Keyboard shortcuts',
-    sectionLimitations: 'Limitations & roadmap',
+    sectionLimitations: 'Limitations',
 
     capabilitiesBody:
-      'Six instruments in one workspace, all executed in the browser on Float32Array buffers.',
+      'Six tools in one workspace: image arithmetic runs in the browser on Float32Array buffers, while archive access and aperture photometry stay in the Python backend.',
+    detectorsTitle: 'Official detector bands',
+    detectorsBody:
+      'Six detector arrays carry 17 channels each, 102 in total. The ranges are the mission’s own channel edges from the IRSA spectral_channels calibration product; the Channels tab isolates one channel by masking every pixel assigned elsewhere.',
+    detectorColumn: 'Detector',
+    rangeColumn: 'Wavelength range',
+    channelsColumn: 'Channels',
 
     intakeBody:
       'The Explorer asks for one pointing: right ascension, declination and a field of view. Those three values travel into the workspace URL, so any view can be bookmarked, shared or embedded later.',
@@ -453,7 +460,7 @@ const en = {
     ],
     intakeFovTitle: 'Field of view',
     intakeFovBody:
-      'FoV sets how much sky one frame covers. The backend always resamples onto a 480 × 480 display grid, so a small field magnifies the target while a wide field catches fast movers — at the cost of coarser sampling and a larger cutout to transfer.',
+      'FoV sets how much sky one frame covers. The backend resamples onto a 480 × 480 display grid by default, so a small field magnifies the target while a wide field catches fast movers — at the cost of coarser sampling and a larger cutout to transfer. Advanced mode can request the detector-native 6.15″ grid instead.',
     intakeFovGuide: [
       { label: '0.1°', body: '6′ across — resolved binaries and parallax wobble.' },
       { label: '0.25°', body: '15′ — Epsilon Indi B’s 0.7″ pair and nearby fast stars.' },
@@ -485,8 +492,8 @@ const en = {
     ],
     overlaysLegendTitle: 'Overlay legend',
     legendTarget: 'Science target',
-    legendGaia: 'Gaia DR3 + proper motion ×10',
-    legendWise: 'WISE / NEOWISE',
+    legendGaia: 'Gaia DR3 + 10-year proper motion',
+    legendWise: 'WISE (AllWISE)',
     legendNeo: 'NEOSSat frame',
     legendFlags: 'Contaminated pixel',
 
@@ -584,6 +591,12 @@ const en = {
         advanced: true,
         note: 'The mode itself travels as ?ui=simple or ?ui=advanced.',
       },
+      {
+        name: 'PNG frame export & fullscreen',
+        simple: true,
+        advanced: true,
+        note: 'Downloads the composed viewport, overlays included.',
+      },
     ],
     capabilityCompareTitle: 'Before / after wipe',
     capabilityCompareBody:
@@ -599,29 +612,29 @@ const en = {
       'A Level-2 plane is a spectral image: its rows span the 17 channels of that band. Selecting a channel keeps only the pixels the mission assigns to it, so you see one monochromatic slice instead of a wavelength-mixed average.',
     capabilitySpectrumTitle: 'Multi-visit spectroscopy',
     capabilitySpectrumBody:
-      'A click measures the source in every visit that covers it and plots flux against the wavelength of the channel that visit samples — forced photometry in uJy with VARIANCE-based error bars and molecular markers.',
+      'A click measures the source in every visit that covers it and plots flux against the wavelength of the channel that visit samples — aperture photometry in µJy with VARIANCE-based error bars and a CSV export; molecular markers live in the channel selector.',
     capabilityScanTitle: 'Movers & transients scan',
     capabilityScanBody:
-      'A 6σ peak finder on the cleaned epoch difference lists movers and variables, rejecting cosmic rays, hot pixels and saturation; click one to profile it.',
+      'A 6σ local-maximum peak finder on the cleaned epoch difference (3σ static-source mask, PSF-scale smoothing) lists movers, variables and transients; click one to centre the aperture and build its spectrum.',
 
     sourcesBody:
       'The browser never calls an archive directly: every catalogue query and FITS read is made by the local FastAPI backend, which then hands compact planes to the page.',
     sourceIrsaTitle: 'NASA/IPAC IRSA',
     sourceIrsaBody:
-      'SPHEREx releases through SIA2, plus WISE/NEOWISE detections through IRSA TAP. Level-2 FITS planes are streamed from the AWS Open Data mirror with HTTP Range requests.',
+      'SPHEREx releases through SIA2, plus WISE (AllWISE) detections through IRSA TAP. Level-2 FITS planes are streamed from the AWS Open Data mirror with HTTP Range requests.',
     sourceGaiaTitle: 'ESA Gaia DR3',
     sourceGaiaBody:
       'Gaia TAP astrometry, drawn as cyan markers inside the frame with 10-year proper-motion arrows (every source brighter than the field\'s adaptive magnitude cut, or the brightest 2 500 of up to ~20 000).',
     sourceNeossatTitle: 'CSA NEOSSat / CADC',
     sourceNeossatBody:
-      'Real NEOSSat frames whose CADC CAOM2 footprint overlaps the field, drawn as the archive polygon with its exposure time. The pointing track is only joined for objects CADC flags as moving.',
+      'Real NEOSSat observations whose CADC CAOM2 footprint overlaps the field, drawn as the archive polygon with its exposure time. The pointing track is only joined for objects CADC flags as moving.',
     fallbackNote:
       'If the archive is unreachable or a field has no product, the workspace says so instead of inventing data.',
 
     pipelineBody:
       'The pipeline is deliberately layered, so a new SPHEREx data release or a new archive endpoint can be added in the backend without touching the UI.',
     pipelineSteps: [
-      'Discover — SIA2 asks IRSA for every SPHEREx spectral image covering the requested circle (DR1 and QR3 collections).',
+      'Discover — SIA2 asks IRSA for every SPHEREx spectral image covering the requested circle; the QR3 wide and deep collections answer today, and the DR1 entries are queried when that release is published.',
       'Fetch — the backend streams only the needed FITS windows from the AWS Open Data mirror over HTTP Range, about 2 MB per cutout instead of 62 MB.',
       'Align — every epoch is resampled with its real SIP/WCS onto one tangent-plane grid, and the FLAGS bitmask and VARIANCE plane are decoded alongside.',
       'Calibrate — the official spectral_channels product supplies the per-pixel channel index (0–18) and the authoritative 102-channel table (centre, edges, R, bandwidth); WAVE-TAB supplies a per-pixel wavelength grid.',
@@ -633,16 +646,33 @@ const en = {
       'Provenance is always visible: the workspace shows the archive collection, the epoch MJD, the detector and the pixel values in MJy/sr for every frame it renders.',
     upgradeNote:
       'Update path: add the new SIA2 collection to SIA_COLLECTIONS in backend/app/config.py, point the FITS reader at the matching AWS Open Data prefix, and the UI inherits the new epochs.',
+    apiBody:
+      'The browser never talks to an archive directly: every query is served by the local FastAPI backend (uvicorn main:app --port 8787). These are the endpoints the workspace calls.',
+    apiEndpoint: 'Endpoint',
+    apiPurpose: 'Purpose',
+    apiEndpoints: [
+      { path: '/api/health', purpose: 'liveness and cache statistics' },
+      { path: '/api/coverage?ra&dec&fov', purpose: 'SIA2 discovery, visits grouped into epochs' },
+      { path: '/api/frame?ra&dec&fov&epoch&detector&shape&flags&variance', purpose: 'resampled SPXF planes' },
+      { path: '/api/bands', purpose: 'authoritative 102-channel table' },
+      { path: '/api/epochs?ra&dec&fov&detector', purpose: 'epochs containing one detector' },
+      { path: '/api/detectors?ra&dec&fov&epoch', purpose: 'detectors present in one epoch' },
+      { path: '/api/spectrum?ra&dec&fov&max_products', purpose: 'multi-visit spectrum' },
+      { path: '/api/overlays?ra&dec&fov&layers', purpose: 'Gaia, WISE and NEOSSat rows' },
+      { path: '/api/random-field?fov', purpose: 'random point verified as covered' },
+    ],
+    apiNote:
+      'Frames arrive as the compact SPXF binary: a JSON header followed by float32 image, uint8 coverage/channel and float32 wavelength/variance planes, plus uint32 FLAGS when requested.',
 
     walkthroughBody:
       'These five sources were chosen by NASA to exercise motion, binarity, variability and spectral depth. Each card opens the workspace on the target with its recommended field of view.',
 
     embedBody:
-      'The workspace is fully addressable. Pass coordinates and view state as query parameters to restore or embed an exact view.',
+      'The workspace state travels in the URL. Coordinates, mode, epochs, stretch, channel and overlays are restored from query parameters; native sampling and the compare brightness scale stay local to the session.',
     embedParams: [
       'ra — right ascension in decimal degrees (0–360)',
       'dec — declination in decimal degrees (−90 to +90)',
-      'fov — field of view in degrees',
+      'fov — field of view in degrees (0.05–5)',
       'target — test-target slug (barnard, epsilon-indi-b, wise-0855, rw-aurigae, r-draconis)',
       'mode — blink | coadd | diff | compare',
       'ui — simple | advanced workspace surface (simple by default)',
@@ -651,7 +681,9 @@ const en = {
       'band=0 (or array=0) — quick look: mean of the six detectors, not a measurement',
       'epoch — 0–5, the frame shown in Blink mode',
       'a, b — epoch indices for difference imaging and the before/after pair (0–5)',
-      'fps — blinking frame rate, 0.5–12',
+      'fps — blinking frame rate; the slider covers 0.5–10, the URL accepts 0.5–12',
+      'pp — 1 keeps the ping-pong loop running',
+      'play — 1 starts playback on load',
       'stretch — asinh | linear | sqrt | log',
       'gain — stretch gain, 0.5–40',
       'flags — 1 to tint contaminated pixels',
@@ -661,7 +693,8 @@ const en = {
     embedExampleTitle: 'Embed snippet',
     embedExample:
       '<iframe\n  src="https://your-host/workspace?ra=269.452075&dec=4.693364&fov=0.5&target=barnard&mode=diff&band=0"\n  width="100%"\n  height="720"\n  style="border:1px solid #27272a"\n  title="SPHEREx Sky Explorer"\n  loading="lazy"\n></iframe>',
-    embedNote: 'The workspace needs the API: run the backend, then embed the frontend origin.',
+    embedNote:
+      'The workspace needs the API: run the backend, then embed the frontend origin. For a non-localhost host, add it to SPHEREX_CORS_ORIGINS; the default list only allows loopback origins.',
 
     shortcutsBody: 'Every control is reachable from the keyboard while the workspace is focused.',
     shortcuts: [
@@ -689,6 +722,8 @@ const en = {
       'Coverage is uneven: RW Aurigae and R Draconis have no NEOSSat frame in CADC CAOM2, and the overlay panel says so instead of drawing one.',
       'If a field, epoch or detector has no product, the workspace reports it instead of showing an image.',
     ],
+    verifiedNote:
+      'Verified against backend v2.0.0, spectral_channels_spx_cal-sch-v2-2026-229 and the QR3 collection, November 2026.',
   },
 
   targets: {
@@ -849,7 +884,7 @@ const uk: Dictionary = {
       'Та сама ділянка неба повертається кожні півроку, утворюючи природний часовий ряд для пошуку руху та змінності.',
     cardArraysTitle: 'Шість матриць детекторів',
     cardArraysBody:
-      'Сума 17 каналів кожної матриці підвищує співвідношення сигнал/шум приблизно вчетверо, і слабкі об’єкти стають видимими.',
+      'Кожна матриця — це одне спектральне зображення: кожен рядок має власну довжину хвилі, тож канал читають, а не додають, і нічого не усереднюється.',
     cardDiscoveryTitle: 'Відкриття для кожного',
     cardDiscoveryBody:
       'Публічні архівні дані дозволяють кожному долучитися до науки — без власної обсерваторії.',
@@ -905,10 +940,10 @@ const uk: Dictionary = {
       'Накладіть один візит на інший: тягніть розділювач, і шов іде по тій самій сітці неба.',
     bandsTitle: 'Канали та матриці детекторів',
     bandsBody:
-      'Сума 17 каналів кожної матриці дає максимальний SNR, або переглядайте окремі вузькі канали від 0,75 до 5,0 мкм.',
+      'Одне реальне спектральне зображення на матрицю: 17 каналів від 0,75 до 5,0 мкм; ізолюйте канал, а не усереднюйте довжини хвиль.',
     overlaysTitle: 'Накладання інших телескопів',
     overlaysBody:
-      'Вмикайте вектори власного руху Gaia DR3, детекції WISE/NEOWISE та реальні полігони кадрів CSA NEOSSat із каталогу CADC.',
+      'Вмикайте вектори власного руху Gaia DR3, детекції WISE (AllWISE) та реальні полігони кадрів CSA NEOSSat із каталогу CADC.',
     metadataTitle: 'Метадані та прапорці забруднення',
     metadataBody:
       'Переглядайте мітки часу MJD та бітову маску пікселя: космічний промінь, насичення, дифракційний сплеск, інерція, гарячий піксель.',
@@ -1044,7 +1079,7 @@ const uk: Dictionary = {
     overlayUnavailable: 'архів недоступний — це не порожнє поле',
     overlayApiOffline: 'локальний API недоступний',
     overlayPending: 'запит до архіву…',
-    overlayWise: 'WISE / NEOWISE',
+    overlayWise: 'WISE (AllWISE)',
     overlayWiseDetail: '{n} інфрачервоних детекцій',
     overlayWiseTruncated: '{n}+ інфрачервоних детекцій (ліміт рядків)',
     overlayWiseEmpty: 'жодного джерела WISE у цьому полі',
@@ -1055,19 +1090,19 @@ const uk: Dictionary = {
     overlayNeossatEmpty: 'жоден кадр NEOSSat не покриває це поле',
     overlayNeossatError: 'TAP CADC недоступний',
     overlayPmNote:
-      'Стрілки PM: власний рух ×10 (10 років) · коротші за 3 px малюються як 3 px',
+      'Стрілки PM: база власного руху за 10 років · коротші за 3 px малюються як 3 px',
     overlayGrid: 'Сітка',
     overlayLabels: 'Підписи',
     overlayTracks: 'Треки',
     legendTitle: 'Легенда',
     legendTarget: 'Науковий об’єкт',
-    legendGaia: 'Gaia DR3 + власний рух ×10',
-    legendWise: 'WISE / NEOWISE',
+    legendGaia: 'Gaia DR3 + власний рух за 10 років',
+    legendWise: 'WISE (AllWISE)',
     legendNeo: 'Кадр NEOSSat',
     legendFlags: 'Забруднений піксель',
     moversTitle: 'Рухомі об’єкти й транзієнти',
     moversBody:
-      'Піки в очищеній різниці епох: рухомі джерела, змінні та транзієнти після відсіювання космічних променів, насичення й гарячих пікселів. Клацніть кандидата, щоб відцентрувати апертуру й отримати спектр.',
+      'Піки в очищеній різниці епох: рухомі джерела, змінні та транзієнти вище 6σ, з маскою статичних зір на 3σ і згладженими залишками масштабу PSF. Клацніть кандидата, щоб відцентрувати апертуру й отримати спектр.',
     moversScan: 'Сканувати',
     moversScanning: 'Сканування',
     moversNeedDiff: 'Перемкніться в режим різниці, щоб порівняти епоху A з епохою B.',
@@ -1149,13 +1184,20 @@ const uk: Dictionary = {
     sectionModes: 'Два режими робочого поля',
     sectionSources: 'Джерела даних і архівні конвеєри',
     sectionPipeline: 'Конвеєр і походження даних',
+    sectionApi: 'API бекенда',
     sectionWalkthrough: 'Тестові об’єкти та на що дивитися',
     sectionEmbed: 'API URL та вбудовування через iframe',
     sectionShortcuts: 'Клавіатурні скорочення',
-    sectionLimitations: 'Обмеження та план розвитку',
+    sectionLimitations: 'Обмеження',
 
     capabilitiesBody:
-      'Шість інструментів в одному робочому полі — усі виконуються в браузері на буферах Float32Array.',
+      'Шість інструментів в одному робочому полі: арифметика зображень виконується в браузері на буферах Float32Array, а доступ до архіву й апертурна фотометрія — на бекенді Python.',
+    detectorsTitle: 'Офіційні смуги детекторів',
+    detectorsBody:
+      'Шість матриць детекторів мають по 17 каналів, разом 102. Межі взяті з калібрувального продукту IRSA spectral_channels; вкладка «Канали» ізолює один канал, маскуючи всі пікселі, віднесені до інших.',
+    detectorColumn: 'Детектор',
+    rangeColumn: 'Діапазон довжин хвиль',
+    channelsColumn: 'Канали',
 
     intakeBody:
       'Сторінка огляду запитує одне наведення: пряме піднесення, схилення та поле зору. Ці три значення потрапляють в URL робочого поля, тож будь-який вигляд можна зберегти в закладках, надіслати або вбудувати.',
@@ -1177,7 +1219,7 @@ const uk: Dictionary = {
     ],
     intakeFovTitle: 'Поле зору',
     intakeFovBody:
-      'Поле зору визначає, яку ділянку неба охоплює один кадр. Бекенд завжди перепроєктує на сітку 480 × 480, тож мале поле наближає об’єкт, а широке ловить швидкі рухомі джерела — ціною грубшої дискретизації та більшого вирізу для передачі.',
+      'Поле зору визначає, яку ділянку неба охоплює один кадр. Бекенд типово перепроєктує на сітку 480 × 480, тож мале поле наближає об’єкт, а широке ловить швидкі рухомі джерела — ціною грубшої дискретизації та більшого вирізу для передачі. Розширений режим може натомість запросити рідну сітку детектора 6.15″.',
     intakeFovGuide: [
       { label: '0.1°', body: '6′ — розділені подвійні та паралаксне хитання.' },
       { label: '0.25°', body: '15′ — пара Epsilon Indi B з розділенням 0,7″ і швидкі зорі.' },
@@ -1209,8 +1251,8 @@ const uk: Dictionary = {
     ],
     overlaysLegendTitle: 'Легенда накладань',
     legendTarget: 'Науковий об’єкт',
-    legendGaia: 'Gaia DR3 + власний рух ×10',
-    legendWise: 'WISE / NEOWISE',
+    legendGaia: 'Gaia DR3 + власний рух за 10 років',
+    legendWise: 'WISE (AllWISE)',
     legendNeo: 'Кадр NEOSSat',
     legendFlags: 'Забруднений піксель',
 
@@ -1308,6 +1350,12 @@ const uk: Dictionary = {
         advanced: true,
         note: 'Сам режим передається як ?ui=simple або ?ui=advanced.',
       },
+      {
+        name: 'Експорт кадру в PNG і повноекранний режим',
+        simple: true,
+        advanced: true,
+        note: 'Завантажує скомпонований кадр разом із накладаннями.',
+      },
     ],
     capabilityCompareTitle: 'Шторка «до/після»',
     capabilityCompareBody:
@@ -1323,29 +1371,29 @@ const uk: Dictionary = {
       'Площина рівня 2 — це спектральне зображення: її рядки покривають 17 каналів цієї смуги. Вибір каналу лишає тільки ті пікселі, які місія віднесла до нього, тож ви бачите монохроматичний зріз, а не усереднення різних довжин хвиль.',
     capabilitySpectrumTitle: 'Мультивізитна спектроскопія',
     capabilitySpectrumBody:
-      'Клацання вимірює джерело в кожному візиті, що його покриває, і будує потік проти довжини хвилі каналу цього візиту — форсована фотометрія в мкЯн із похибками з VARIANCE та молекулярними маркерами.',
+      'Клацання вимірює джерело в кожному візиті, що його покриває, і будує потік проти довжини хвилі каналу цього візиту — апертурна фотометрія в мкЯн із похибками з VARIANCE та експортом CSV; молекулярні маркери живуть у виборі каналів.',
     capabilityScanTitle: 'Пошук рухомих об’єктів і транзієнтів',
     capabilityScanBody:
-      'Пошук піків на 6σ у очищеній різниці епох дає список рухомих і змінних джерел із відсіюванням космічних променів, гарячих пікселів і насичення; клацніть кандидата, щоб отримати спектр.',
+      'Пошук локальних максимумів на 6σ у очищеній різниці епох (маска статичних джерел на 3σ, згладжування масштабу PSF) дає список рухомих, змінних і транзієнтних джерел; клацніть кандидата, щоб відцентрувати апертуру й побудувати його спектр.',
 
     sourcesBody:
       'Браузер ніколи не звертається до архіву напряму: усі запити каталогів і читання FITS виконує локальний бекенд на FastAPI, а сторінка отримує вже компактні площини.',
     sourceIrsaTitle: 'NASA/IPAC IRSA',
     sourceIrsaBody:
-      'Релізи SPHEREx через SIA2 і детекції WISE/NEOWISE через IRSA TAP. FITS-площини рівня 2 читаються з дзеркала AWS Open Data запитами HTTP Range.',
+      'Релізи SPHEREx через SIA2 і детекції WISE (AllWISE) через IRSA TAP. FITS-площини рівня 2 читаються з дзеркала AWS Open Data запитами HTTP Range.',
     sourceGaiaTitle: 'ESA Gaia DR3',
     sourceGaiaBody:
       'Астрометрія Gaia TAP: бірюзові маркери в межах кадру зі стрілками власного руху за 10 років (усі джерела яскравіші за адаптивний поріг поля, або 2 500 найяскравіших із ~20 000).',
     sourceNeossatTitle: 'CSA NEOSSat / CADC',
     sourceNeossatBody:
-      'Реальні кадри NEOSSat, чий полігон покриття з CADC CAOM2 перетинає поле: малюються як архівний полігон із часом експозиції. Лінія треку з’єднується лише для об’єктів, які CADC позначає як рухомі.',
+      'Реальні спостереження NEOSSat, чий полігон покриття з CADC CAOM2 перетинає поле: малюються як архівний полігон із часом експозиції. Лінія треку з’єднується лише для об’єктів, які CADC позначає як рухомі.',
     fallbackNote:
       'Якщо архів недоступний або для поля немає продукту, робоче поле прямо про це повідомляє, а не малює вигадані дані.',
 
     pipelineBody:
       'Конвеєр свідомо розділений: новий реліз SPHEREx або новий архівний ендпоінт додається в бекенд, не змінюючи інтерфейс.',
     pipelineSteps: [
-      'Пошук — SIA2 питає IRSA про всі спектральні зображення SPHEREx, що покривають задане коло (колекції DR1 і QR3).',
+      'Пошук — SIA2 питає IRSA про всі спектральні зображення SPHEREx, що покривають задане коло; сьогодні відповідають колекції QR3 wide і deep, а записи DR1 запитуються, коли реліз з’явиться.',
       'Читання — бекенд вичитує з дзеркала AWS Open Data лише потрібні вікна FITS через HTTP Range: близько 2 МБ на виріз замість 62 МБ.',
       'Вирівнювання — кожна епоха перепроєктується за своїм реальним SIP/WCS на спільну сітку, паралельно декодуються маска FLAGS і площина VARIANCE.',
       'Калібрування — офіційний продукт spectral_channels дає індекс каналу на піксель (0–18) і авторитетну таблицю 102 каналів (центр, межі, R, смуга); WAVE-TAB дає сітку довжин хвиль.',
@@ -1357,16 +1405,33 @@ const uk: Dictionary = {
       'Походження даних завжди видиме: робоче поле показує колекцію архіву, MJD епохи, детектор і значення пікселів у MJy/sr для кожного кадру.',
     upgradeNote:
       'Шлях оновлення: додайте нову колекцію SIA2 у SIA_COLLECTIONS у backend/app/config.py, спрямуйте FITS-читач на відповідний префікс AWS Open Data — і інтерфейс отримає нові епохи.',
+    apiBody:
+      'Браузер ніколи не звертається до архіву напряму: усі запити обслуговує локальний бекенд FastAPI (uvicorn main:app --port 8787). Це ендпоінти, які викликає робоче поле.',
+    apiEndpoint: 'Ендпоінт',
+    apiPurpose: 'Призначення',
+    apiEndpoints: [
+      { path: '/api/health', purpose: 'живучість і статистика кешу' },
+      { path: '/api/coverage?ra&dec&fov', purpose: 'пошук SIA2, візити згруповано в епохи' },
+      { path: '/api/frame?ra&dec&fov&epoch&detector&shape&flags&variance', purpose: 'перепроєктовані площини SPXF' },
+      { path: '/api/bands', purpose: 'авторитетна таблиця 102 каналів' },
+      { path: '/api/epochs?ra&dec&fov&detector', purpose: 'епохи, що містять вибраний детектор' },
+      { path: '/api/detectors?ra&dec&fov&epoch', purpose: 'детектори, наявні в одній епосі' },
+      { path: '/api/spectrum?ra&dec&fov&max_products', purpose: 'мультивізитний спектр' },
+      { path: '/api/overlays?ra&dec&fov&layers', purpose: 'рядки Gaia, WISE і NEOSSat' },
+      { path: '/api/random-field?fov', purpose: 'випадкова точка з підтвердженим покриттям' },
+    ],
+    apiNote:
+      'Кадри надходять у компактному двійковому форматі SPXF: JSON-заголовок, далі площини float32 (зображення), uint8 (покриття/канал) і float32 (довжина хвилі/дисперсія), плюс uint32 FLAGS за запитом.',
 
     walkthroughBody:
       'Ці п’ять джерел NASA обрала, щоб перевірити рух, подвійність, змінність і спектральну глибину. Кожна картка відкриває робоче поле на об’єкті з рекомендованим полем зору.',
 
     embedBody:
-      'Робоче поле повністю адресується. Передавайте координати й стан перегляду як параметри запиту, щоб відтворити або вставити точний вигляд.',
+      'Стан робочого поля живе в URL. Координати, режим, епохи, розтяг, канал і накладання відновлюються з параметрів запиту; нативна вибірка та шкала яскравості в режимі порівняння лишаються локальними для сесії.',
     embedParams: [
       'ra — пряме піднесення в десяткових градусах (0–360)',
       'dec — схилення в десяткових градусах (−90…+90)',
-      'fov — поле зору в градусах',
+      'fov — поле зору в градусах (0,05–5)',
       'target — ідентифікатор об’єкта (barnard, epsilon-indi-b, wise-0855, rw-aurigae, r-draconis)',
       'mode — blink | coadd | diff | compare',
       'ui — simple | advanced: поверхня робочого поля (типово simple)',
@@ -1375,7 +1440,9 @@ const uk: Dictionary = {
       'band=0 (або array=0) — швидкий перегляд: середнє шести детекторів, не вимірювання',
       'epoch — 0–5, кадр у режимі миготіння',
       'a, b — індекси епох для різницевого зображення та пари «до/після» (0–5)',
-      'fps — частота миготіння, 0,5–12',
+      'fps — частота миготіння; слайдер покриває 0,5–10, URL приймає 0,5–12',
+      'pp — 1 зберігає цикл «пінг-понг»',
+      'play — 1 запускає відтворення одразу після завантаження',
       'stretch — asinh | linear | sqrt | log',
       'gain — підсилення розтягу, 0,5–40',
       'flags — 1, щоб підсвітити забруднені пікселі',
@@ -1385,7 +1452,8 @@ const uk: Dictionary = {
     embedExampleTitle: 'Фрагмент для вбудовування',
     embedExample:
       '<iframe\n  src="https://your-host/workspace?ra=269.452075&dec=4.693364&fov=0.5&target=barnard&mode=diff&band=0"\n  width="100%"\n  height="720"\n  style="border:1px solid #27272a"\n  title="SPHEREx Sky Explorer"\n  loading="lazy"\n></iframe>',
-    embedNote: 'Робочому полю потрібен бекенд: запустіть API, а потім вбудовуйте адресу фронтенду.',
+    embedNote:
+      'Робочому полю потрібен бекенд: запустіть API, а потім вбудовуйте адресу фронтенду. Для хоста, відмінного від localhost, додайте його до SPHEREX_CORS_ORIGINS; типовий список дозволяє лише loopback-джерела.',
 
     shortcutsBody: 'Усі елементи керування доступні з клавіатури, коли робоче поле у фокусі.',
     shortcuts: [
@@ -1408,11 +1476,13 @@ const uk: Dictionary = {
       'Фотометрія апертурна. У щільних полях блендінг і недодискретизована PSF (FWHM ≈ 7″ ≈ 1,2 пікселя) обмежують точність; PSF-фітинг і поправка на апертуру не застосовуються.',
       'Швидкий перегляд усереднює шість площин детекторів, які змішують різні довжини хвиль: це навігаційний режим, а не фотометричне вимірювання.',
       'WAVE-TAB — модель довжин хвиль рівня візуалізації; науковий продукт CWAVE/CBAND поки не використовується.',
-      'Gaia DR3 малюється в межах кадру, найяскравіші першими: поле показує всі джерела до адаптивного порогу яскравості, а якщо поріг усе ще задалекий — до 2 500 маркерів; панель завжди пише «2 500 із 19 852», а не голий ліміт.',
+      'Gaia DR3 малюється в межах кадру, найяскравіші першими: поле показує всі джерела до адаптивного порогу яскравості, а якщо поріг усе ще занадто далекий — до 2 500 маркерів; панель завжди пише «2 500 із 19 852», а не голий ліміт.',
       'NEOSSat — це шар-локатор: CADC дає полігон покриття, час експозиції та прапорець target_moving, а не самі пікселі NEOSSat.',
       'Покриття нерівномірне: для RW Aurigae і R Draconis у CADC CAOM2 немає жодного кадру NEOSSat, і панель прямо це показує.',
       'Якщо для поля, епохи або детектора немає продукту, робоче поле повідомляє про це замість зображення.',
     ],
+    verifiedNote:
+      'Перевірено проти бекенда v2.0.0, spectral_channels_spx_cal-sch-v2-2026-229 і колекції QR3, листопад 2026.',
   },
 
   targets: {

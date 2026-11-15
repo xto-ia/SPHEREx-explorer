@@ -7,8 +7,10 @@ import { toUrlNumber } from '../lib/coords';
 
 const SOURCE_LINKS = [
   { label: 'IRSA SIA2', href: 'https://irsa.ipac.caltech.edu/SIA?COLLECTION=spherex_qr3&POS=circle+269.45+4.69+0.05' },
+  { label: 'IRSA SPHEREx', href: 'https://irsa.ipac.caltech.edu/Missions/spherex.html' },
+  { label: 'SPHEREx docs', href: 'https://caltech-ipac.github.io/spherex-archive-documentation/spherex-data-access' },
   { label: 'IRSA TAP', href: 'https://irsa.ipac.caltech.edu/TAP' },
-  { label: 'AWS Open Data', href: 'https://registry.opendata.aws/spherex-qr3/' },
+  { label: 'AWS Open Data', href: 'https://registry.opendata.aws/spherex-qr/' },
   { label: 'Gaia DR3', href: 'https://gea.esac.esa.int/archive/' },
   { label: 'CADC', href: 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/' },
   { label: 'CADC CAOM2', href: 'https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/' },
@@ -21,6 +23,16 @@ const OVERLAY_LEGEND = [
   { key: 'legendWise', shape: 'ring', color: '#f59e0b' },
   { key: 'legendNeo', shape: 'line', color: '#f43f5e' },
   { key: 'legendFlags', shape: 'square', color: '#fbbf24' },
+] as const;
+
+/** Official per-detector coverage, from IRSA spectral_channels_spx_cal-sch-v2. */
+const DETECTOR_BANDS = [
+  { label: 'D1', low: 0.743, high: 1.116 },
+  { label: 'D2', low: 1.099, high: 1.651 },
+  { label: 'D3', low: 1.636, high: 2.44 },
+  { label: 'D4', low: 2.422, high: 3.827 },
+  { label: 'D5', low: 3.814, high: 4.426 },
+  { label: 'D6', low: 4.418, high: 5.009 },
 ] as const;
 
 /** Numbered procedure list shared by the intake workflow and the data pipeline. */
@@ -52,6 +64,7 @@ export default function DocsPage() {
     { id: 'modes', label: t.docs.sectionModes },
     { id: 'sources', label: t.docs.sectionSources },
     { id: 'pipeline', label: t.docs.sectionPipeline },
+    { id: 'api', label: t.docs.sectionApi },
     { id: 'walkthrough', label: t.docs.sectionWalkthrough },
     { id: 'embed', label: t.docs.sectionEmbed },
     { id: 'shortcuts', label: t.docs.sectionShortcuts },
@@ -248,6 +261,41 @@ export default function DocsPage() {
                 </li>
               ))}
             </ul>
+
+            <h3 className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400">
+              {t.docs.detectorsTitle}
+            </h3>
+            <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-zinc-500">
+              {t.docs.detectorsBody}
+            </p>
+            <div className="mt-3 overflow-x-auto border border-line bg-canvas/90">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-line">
+                    <th className="px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.detectorColumn}
+                    </th>
+                    <th className="px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.rangeColumn}
+                    </th>
+                    <th className="px-3 py-2 text-right font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.channelsColumn}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DETECTOR_BANDS.map((band) => (
+                    <tr key={band.label} className="border-b border-line/60 last:border-b-0">
+                      <td className="px-3 py-2 font-mono text-[11px] text-zinc-300">{band.label}</td>
+                      <td className="px-3 py-2 font-mono text-[11px] text-zinc-400">
+                        {band.low.toFixed(3)}–{band.high.toFixed(3)} µm
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono text-[11px] text-zinc-400">17</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
 
           {/* Two workspace modes */}
@@ -399,6 +447,47 @@ export default function DocsPage() {
             </div>
           </section>
 
+          {/* Backend API */}
+          <section id="api" aria-labelledby="api-title" className="scroll-mt-20">
+            <h2 id="api-title" className="text-lg sm:text-xl">
+              {t.docs.sectionApi}
+            </h2>
+            <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-zinc-500">
+              {t.docs.apiBody}
+            </p>
+
+            <div className="mt-4 overflow-x-auto border border-line bg-canvas/90">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-line">
+                    <th className="px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.apiEndpoint}
+                    </th>
+                    <th className="px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                      {t.docs.apiPurpose}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {t.docs.apiEndpoints.map((endpoint) => (
+                    <tr key={endpoint.path} className="border-b border-line/60 last:border-b-0">
+                      <td className="whitespace-nowrap px-3 py-2 font-mono text-[11px] text-zinc-300">
+                        {endpoint.path}
+                      </td>
+                      <td className="px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
+                        {endpoint.purpose}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="mt-2 font-mono text-[10px] leading-relaxed text-zinc-600">
+              {t.docs.apiNote}
+            </p>
+          </section>
+
           {/* Walkthrough */}
           <section id="walkthrough" aria-labelledby="walkthrough-title" className="scroll-mt-20">
             <h2 id="walkthrough-title" className="text-lg sm:text-xl">
@@ -523,6 +612,10 @@ export default function DocsPage() {
                 </li>
               ))}
             </ul>
+
+            <p className="mt-3 border border-line bg-black/25 p-3 font-mono text-[10px] leading-relaxed text-zinc-600">
+              {t.docs.verifiedNote}
+            </p>
           </section>
         </div>
 
