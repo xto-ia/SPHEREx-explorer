@@ -30,6 +30,7 @@ import SimpleArraySelector from '../components/workspace/SimpleArraySelector';
 import CatalogOverlays from '../components/workspace/CatalogOverlays';
 import MetadataInspector from '../components/workspace/MetadataInspector';
 import SpectrumPlotter from '../components/workspace/SpectrumPlotter';
+import OverlayLegend from '../components/workspace/OverlayLegend';
 import MoverCandidates from '../components/workspace/MoverCandidates';
 
 function detectorForChannel(channel: { type: string; band: number; array: number }): number {
@@ -885,6 +886,8 @@ export default function WorkspacePage() {
                 detector={detector}
                 simple={state.ui === 'simple'}
               />
+
+              <OverlayLegend />
             </aside>
           </div>
 
