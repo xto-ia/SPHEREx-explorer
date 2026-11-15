@@ -1,5 +1,5 @@
 import { NavLink, Link } from 'react-router-dom';
-import { Aperture, Github } from 'lucide-react';
+import { Github } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { LANGUAGE_LABELS, LANGUAGES } from '../../i18n/translations';
 
@@ -66,9 +66,14 @@ export default function Navbar() {
           className="group flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           aria-label={`${t.nav.brand} ${t.nav.brandSuffix}`}
         >
-          <span className="relative grid h-7 w-7 place-items-center border border-line bg-black/60 transition-colors group-hover:border-accent/60">
-            <Aperture size={14} strokeWidth={1.6} className="text-accent" aria-hidden="true" />
-          </span>
+          <img
+            src="/brand/spherex-explorer-logo.svg"
+            alt=""
+            aria-hidden="true"
+            width={28}
+            height={28}
+            className="h-7 w-7 shrink-0 select-none transition-transform duration-200 group-hover:scale-105"
+          />
           <span className="flex items-baseline gap-2">
             <span className="font-mono text-[13px] font-semibold uppercase tracking-[0.18em] text-zinc-100">
               {t.nav.brand}

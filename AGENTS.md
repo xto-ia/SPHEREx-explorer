@@ -60,6 +60,11 @@ no preview engine and no generated fallback imagery anywhere in the codebase.
 
 Follow .opencode/skills/opencode-ui/SKILL.md strictly (OpenCode website aesthetic: dark carbon #09090b, 1px #27272a borders, monospace typography, sharp corners, space background).
 
+Brand assets live in `frontend/public/brand/` (`spherex-explorer-logo.svg`,
+`spherex-explorer-logo-mono.svg`, `spherex-explorer-logo-1024.png`); `frontend/public/favicon.svg`
+is the small-size variant of the same mark. The mark is drawn **without** a surrounding
+square frame — in the header it sits directly on the canvas next to the SPHEREx wordmark.
+
 ## 4. Git & GitHub Workflow (MANDATORY)
 
 Remote repository: https://github.com/xto-ia/SPHEREx-explorer.git

@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" fill="#09090b" />
-  <rect x="0.5" y="0.5" width="31" height="31" fill="none" stroke="#27272a" />
-  <g fill="none" stroke="#10b981" stroke-width="1.4">
-    <circle cx="16" cy="16" r="8" />
-    <path d="M16 8 L20 16 L16 24 L12 16 Z" />
-    <path d="M8.6 12 L23.4 12 M8.6 20 L23.4 20" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="SPHEREx Explorer">
+  <!-- Favicon variant of /brand/spherex-explorer-logo.svg: same mark, slightly
+       heavier strokes so the rings survive a 16 px browser tab. -->
+  <path d="M 13.28 14.73 L 4.4 10.59 A 12.8 12.8 0 0 1 10.59 4.4 L 14.73 13.28 A 3 3 0 0 0 13.28 14.73 Z" fill="#56B6C2" />
+  <g fill="none" stroke="#56B6C2" stroke-width="2.2" stroke-linecap="round">
+    <path d="M 11.11 6.6 A 10.6 10.6 0 1 1 6.6 11.11" />
+    <path d="M 13 10.23 A 6.5 6.5 0 1 1 10.23 13" />
   </g>
-  <circle cx="16" cy="16" r="1.6" fill="#10b981" />
+  <circle cx="16" cy="16" r="2.2" fill="#56B6C2" />
 </svg>
